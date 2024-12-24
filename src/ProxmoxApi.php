@@ -539,4 +539,91 @@ class ProxmoxApi
             'ssh_key' => $sshKey
         ]);
     }
+
+    /**
+     * Delete a Virtual Machine
+     *
+     * @param string $node Node name
+     * @param int $vmid VM ID
+     * @param bool $force Force delete even if running (will stop VM first)
+     * @param bool $purge Remove VM disk
+     * @return array
+     * @throws Exception
+     */
+    public function deleteVM(string $node, int $vmid, bool $force = false, bool $purge = true): array
+    {
+        // Check if VM exists
+        $vmStatus = $this->request('GET', "nodes/{$node}/qemu/{$vmid}/status/current");
+
+        if (!isset($vmStatus['data'])) {
+            throw new Exception("VM {$vmid} not found on node {$node}");
+        }
+
+        // If VM is running and force is true, stop it first
+        if ($vmStatus['data']['status'] === 'running') {
+            if (!$force) {
+                throw new Exception("Cannot delete running VM. Either stop the VM first or use force option.");
+            }
+
+            // Stop the VM
+            $this->stopVM($node, $vmid);
+
+            // Wait for VM to stop (max 30 seconds)
+            $timeout = 30;
+            $start = time();
+            do {
+                sleep(2);
+                $currentStatus = $this->request('GET', "nodes/{$node}/qemu/{$vmid}/status/current");
+                if ($currentStatus['data']['status'] === 'stopped') {
+                    break;
+                }
+            } while (time() - $start < $timeout);
+
+            // Check if VM actually stopped
+            if ($currentStatus['data']['status'] !== 'stopped') {
+                throw new Exception("Failed to stop VM {$vmid} within timeout period");
+            }
+        }
+
+        // Delete the VM
+        $params = [];
+        if ($purge) {
+            $params['purge'] = 1; // Also remove disk
+            $params['destroy-unreferenced-disks'] = 1; // Remove unreferenced disks
+        }
+
+        try {
+            return $this->request('DELETE', "nodes/{$node}/qemu/{$vmid}", $params);
+        } catch (Exception $e) {
+            throw new Exception("Failed to delete VM {$vmid}: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Delete multiple Virtual Machines
+     *
+     * @param string $node Node name
+     * @param array $vmids Array of VM IDs
+     * @param bool $force Force delete even if running
+     * @param bool $purge Remove VM disks
+     * @return array
+     */
+    public function deleteMultipleVMs(string $node, array $vmids, bool $force = false, bool $purge = true): array
+    {
+        $results = [];
+        $errors = [];
+
+        foreach ($vmids as $vmid) {
+            try {
+                $results[$vmid] = $this->deleteVM($node, $vmid, $force, $purge);
+            } catch (Exception $e) {
+                $errors[$vmid] = $e->getMessage();
+            }
+        }
+
+        return [
+            'success' => $results,
+            'errors' => $errors
+        ];
+    }
 }
