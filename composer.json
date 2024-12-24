@@ -1,0 +1,14 @@
+{
+    "name": "irabbi360/php-proxmox",
+    "description": "A PHP package for Proxmox API integration",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Irabbi360\\Proxmox\\": "src/"
+        }
+    },
+    "require": {
+        "php": "^7.4|^8.0",
+        "ext-curl": "*"
+    }
+}
