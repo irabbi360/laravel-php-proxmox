@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Facade;
 /**
  * @see \Irabbi360\Proxmox\LaravelProxmox
  */
-class Proxmox extends Facade
+class ProxmoxVM extends Facade
 {
     protected static function getFacadeAccessor()
     {

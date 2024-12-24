@@ -18,7 +18,7 @@
                 "Irabbi360\\Proxmox\\ProxmoxServiceProvider"
             ],
             "aliases": {
-                "Proxmox": "Irabbi360\\Proxmox\\Facades\\Proxmox"
+                "Proxmox": "Irabbi360\\Proxmox\\Facades\\ProxmoxVM"
             }
         }
     },
