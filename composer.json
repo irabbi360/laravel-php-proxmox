@@ -1,6 +1,7 @@
 {
     "name": "irabbi360/php-proxmox",
     "description": "A PHP package for Proxmox API integration",
+    "type": "library",
     "license": "MIT",
     "autoload": {
         "psr-4": {
@@ -10,5 +11,17 @@
     "require": {
         "php": "^7.4|^8.0",
         "ext-curl": "*"
-    }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Irabbi360\\Proxmox\\ProxmoxServiceProvider"
+            ],
+            "aliases": {
+                "ProxmoxApi": "Irabbi360\\Proxmox\\Facades\\ProxmoxApi"
+            }
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
 }

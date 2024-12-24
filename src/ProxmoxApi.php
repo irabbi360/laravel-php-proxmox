@@ -47,6 +47,7 @@ class ProxmoxApi
         ]);
 
         $response = curl_exec($curl);
+
         $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
 
         if ($response === false) {
@@ -58,13 +59,11 @@ class ProxmoxApi
         if ($httpCode !== 200) {
             throw new Exception('Authentication failed');
         }
-
         $data = json_decode($response, true);
 
         if (!isset($data['data'])) {
             throw new Exception('Invalid response format');
         }
-
         $this->ticket = $data['data']['ticket'];
         $this->csrf = $data['data']['CSRFPreventionToken'];
 
@@ -126,6 +125,17 @@ class ProxmoxApi
         }
 
         return json_decode($response, true);
+    }
+
+    /**
+     * API version details, including some parts of the global datacenter config.
+     *
+     * @return array
+     * @throws Exception
+     */
+    public function version(): array
+    {
+        return $this->request('GET', 'version');
     }
 
     /**
