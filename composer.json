@@ -3,6 +3,24 @@
     "description": "A PHP package for Proxmox API integration",
     "type": "library",
     "license": "MIT",
+    "homepage": "https://github.com/irabbi360/laravel-php-proxmox",
+    "keywords": [
+        "Fazle Rabbi",
+        "laravel",
+        "laravel proxmox",
+        "proxmox",
+        "proxmox api",
+        "php proxmox api",
+        "laravel php proxmox api",
+        "proxmox api client"
+    ],
+    "authors": [
+        {
+            "name": "Fazle Rabbi",
+            "email": "fazrabbi360@gmail.com",
+            "role": "Developer"
+        }
+    ],
     "autoload": {
         "psr-4": {
             "Irabbi360\\Proxmox\\": "src/"
