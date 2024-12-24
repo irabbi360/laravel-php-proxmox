@@ -79,7 +79,7 @@ class ProxmoxApi
      * @return array
      * @throws Exception
      */
-    public function request(string $method, string $endpoint, array $params = []): array
+    public function makeRequest(string $method, string $endpoint, array $params = []): array
     {
         if (!$this->ticket) {
             $this->login();
@@ -135,7 +135,7 @@ class ProxmoxApi
      */
     public function version(): array
     {
-        return $this->request('GET', 'version');
+        return $this->makeRequest('GET', 'version');
     }
 
     /**
@@ -146,7 +146,7 @@ class ProxmoxApi
      */
     public function getNodes(): array
     {
-        return $this->request('GET', 'nodes');
+        return $this->makeRequest('GET', 'nodes');
     }
 
     /**
@@ -158,7 +158,7 @@ class ProxmoxApi
      */
     public function getVMs(string $node): array
     {
-        return $this->request('GET', "nodes/{$node}/qemu");
+        return $this->makeRequest('GET', "nodes/{$node}/qemu");
     }
 
     /**
@@ -171,7 +171,7 @@ class ProxmoxApi
      */
     public function getVMStatus(string $node, int $vmid): array
     {
-        return $this->request('GET', "nodes/{$node}/qemu/{$vmid}/status/current");
+        return $this->makeRequest('GET', "nodes/{$node}/qemu/{$vmid}/status/current");
     }
 
     /**
@@ -184,7 +184,7 @@ class ProxmoxApi
      */
     public function startVM(string $node, int $vmid): array
     {
-        return $this->request('POST', "nodes/{$node}/qemu/{$vmid}/status/start");
+        return $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/status/start");
     }
 
     /**
@@ -197,7 +197,85 @@ class ProxmoxApi
      */
     public function stopVM(string $node, int $vmid): array
     {
-        return $this->request('POST', "nodes/{$node}/qemu/{$vmid}/status/stop");
+        return $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/status/stop");
+    }
+
+    /**
+     * Reset VM
+     *
+     * @param string $node Node name
+     * @param int $vmid VM ID
+     * @return array
+     * @throws Exception
+     */
+    public function resetVM(string $node, int $vmid): array
+    {
+        return $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/status/reset");
+    }
+
+    /**
+     * Current Status VM
+     *
+     * @param string $node Node name
+     * @param int $vmid VM ID
+     * @return array
+     * @throws Exception
+     */
+    public function currentStatusVM(string $node, int $vmid): array
+    {
+        return $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/status/current");
+    }
+
+    /**
+     * Reboot VM
+     *
+     * @param string $node Node name
+     * @param int $vmid VM ID
+     * @return array
+     * @throws Exception
+     */
+    public function rebootVM(string $node, int $vmid): array
+    {
+        return $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/status/reboot");
+    }
+
+    /**
+     * Shutdown VM
+     *
+     * @param string $node Node name
+     * @param int $vmid VM ID
+     * @return array
+     * @throws Exception
+     */
+    public function shutdownVM(string $node, int $vmid): array
+    {
+        return $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/status/shutdown");
+    }
+
+    /**
+     * Resume VM
+     *
+     * @param string $node Node name
+     * @param int $vmid VM ID
+     * @return array
+     * @throws Exception
+     */
+    public function resumeVM(string $node, int $vmid): array
+    {
+        return $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/status/resume");
+    }
+
+    /**
+     * Suspend VM
+     *
+     * @param string $node Node name
+     * @param int $vmid VM ID
+     * @return array
+     * @throws Exception
+     */
+    public function suspendVM(string $node, int $vmid): array
+    {
+        return $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/status/suspend");
     }
 
     /**
@@ -248,7 +326,23 @@ class ProxmoxApi
             }
         }
 
-        return $this->request('POST', "nodes/{$node}/qemu", $params);
+        return $this->makeRequest('POST', "nodes/{$node}/qemu", $params);
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function setVMPassword(string $node, int $vmid)
+    {
+        $response = $this->makeRequest('POST', "/nodes/{$node}/qemu/{$vmid}/config", [
+            'ciuser' => 'root',
+            'cipassword' => 'Password@@24'
+        ]);
+        return $response;
+        if ($response['success']) {
+            return response()->json('SSH credentials injected successfully');
+        }
+        return response()->json('SSH credentials failed to inject!');
     }
 
     /**
@@ -259,7 +353,7 @@ class ProxmoxApi
      */
     private function getNextVMID(): int
     {
-        $response = $this->request('GET', 'cluster/nextid');
+        $response = $this->makeRequest('GET', 'cluster/nextid');
 
         if (!isset($response['data'])) {
             throw new Exception('Failed to get next VMID');
@@ -291,7 +385,7 @@ class ProxmoxApi
 
         $params = array_merge($defaults, $params);
 
-        return $this->request(
+        return $this->makeRequest(
             'POST',
             "nodes/{$node}/qemu/{$templateId}/clone",
             $params
@@ -309,7 +403,7 @@ class ProxmoxApi
      */
     public function setVMConfig(string $node, int $vmid, array $params): array
     {
-        return $this->request(
+        return $this->makeRequest(
             'POST',
             "nodes/{$node}/qemu/{$vmid}/config",
             $params
@@ -333,7 +427,7 @@ class ProxmoxApi
         }
 
         // Find next available SCSI disk ID
-        $config = $this->request('GET', "nodes/{$node}/qemu/{$vmid}/config");
+        $config = $this->makeRequest('GET', "nodes/{$node}/qemu/{$vmid}/config");
         $nextId = 0;
 
         while (isset($config['data']["scsi{$nextId}"])) {
@@ -360,7 +454,7 @@ class ProxmoxApi
     {
         try {
             // First, check if VM exists
-            $vmStatus = $this->request('GET', "nodes/{$node}/qemu/{$vmid}/status/current");
+            $vmStatus = $this->makeRequest('GET', "nodes/{$node}/qemu/{$vmid}/status/current");
 
             if (!isset($vmStatus['data'])) {
                 return [
@@ -480,7 +574,7 @@ class ProxmoxApi
     public function attachSSHKey(string $node, int $vmid, string $publicKey): array
     {
         // First check if VM exists and uses cloud-init
-        $vmConfig = $this->request('GET', "nodes/{$node}/qemu/{$vmid}/config");
+        $vmConfig = $this->makeRequest('GET', "nodes/{$node}/qemu/{$vmid}/config");
 
         if (!isset($vmConfig['data'])) {
             throw new Exception("VM {$vmid} not found on node {$node}");
@@ -540,6 +634,20 @@ class ProxmoxApi
         ]);
     }
 
+    public function configureVMCloudInitNetwork(string $node, int $vmid, $ip, $gateway, $netmask)
+    {
+        $payload = [
+            "ipconfig0" =>  "{$ip}/{$netmask},gw={$gateway}"
+        ];
+
+        return $this->makeRequest('PUT', "nodes/{$node}/qemu/{$vmid}/config", $payload);
+    }
+
+    public function applyCloudInitVM($node, $vmid)
+    {
+        return $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/cloudinit");
+    }
+
     /**
      * Delete a Virtual Machine
      *
@@ -553,7 +661,7 @@ class ProxmoxApi
     public function deleteVM(string $node, int $vmid, bool $force = false, bool $purge = true): array
     {
         // Check if VM exists
-        $vmStatus = $this->request('GET', "nodes/{$node}/qemu/{$vmid}/status/current");
+        $vmStatus = $this->makeRequest('GET', "nodes/{$node}/qemu/{$vmid}/status/current");
 
         if (!isset($vmStatus['data'])) {
             throw new Exception("VM {$vmid} not found on node {$node}");
@@ -573,7 +681,7 @@ class ProxmoxApi
             $start = time();
             do {
                 sleep(2);
-                $currentStatus = $this->request('GET', "nodes/{$node}/qemu/{$vmid}/status/current");
+                $currentStatus = $this->makeRequest('GET', "nodes/{$node}/qemu/{$vmid}/status/current");
                 if ($currentStatus['data']['status'] === 'stopped') {
                     break;
                 }
@@ -593,7 +701,7 @@ class ProxmoxApi
         }
 
         try {
-            return $this->request('DELETE', "nodes/{$node}/qemu/{$vmid}", $params);
+            return $this->makeRequest('DELETE', "nodes/{$node}/qemu/{$vmid}", $params);
         } catch (Exception $e) {
             throw new Exception("Failed to delete VM {$vmid}: " . $e->getMessage());
         }
@@ -625,5 +733,45 @@ class ProxmoxApi
             'success' => $results,
             'errors' => $errors
         ];
+    }
+
+    public function injectSSHCredentials($node, $vmid, $username, $password, $sshKey = null)
+    {
+        $payload = [
+            'ciuser' => $username,
+            'cipassword' => $password
+        ];
+
+        if ($sshKey) {
+            $payload['sshkeys'] = $sshKey;
+        }
+
+        $url = "/nodes/{$node}/qemu/{$vmid}/config";
+        return $this->makeRequest('POST', "{$this->baseUrl}{$url}", $payload);
+    }
+
+    public function rebuildCloudInit($node, $vmid)
+    {
+        $url = "/nodes/{$node}/qemu/{$vmid}/cloudinit";
+        return $this->makeRequest('POST', "{$this->baseUrl}{$url}");
+
+        // Usage
+        /*try {
+            $proxmox = new ProxmoxAPI('https://your-proxmox-server', 'root', 'password');
+            $node = 'node1';
+            $vmid = 100;
+
+            // Inject SSH credentials
+            $response = $proxmox->injectSSHCredentials($node, $vmid, 'myuser', 'mypassword', 'ssh-rsa AAAAB3...user@domain');
+
+            if ($response['success']) {
+                echo "SSH credentials injected successfully.\n";
+                $proxmox->rebuildCloudInit($node, $vmid);
+            } else {
+                echo "Failed to inject SSH credentials: " . $response['message'] . "\n";
+            }
+        } catch (Exception $e) {
+            echo "Error: " . $e->getMessage();
+        }*/
     }
 }
