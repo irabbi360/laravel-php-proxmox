@@ -13,18 +13,26 @@ class ProxmoxServiceProvider extends ServiceProvider
             __DIR__.'/../config/proxmox.php', 'proxmox'
         );
 
-        // Register the main class with the name 'proxmox'
-        $this->app->singleton('proxmox', function ($app) {
-            $config = $app['config']['proxmox'];
+        // Register Proxmox services
+        $services = [
+            'proxmox-node' => ProxmoxNodeVm::class,
+            'proxmox-cluster' => ProxmoxCluster::class,
+            'proxmox-storage' => ProxmoxStorage::class,
+        ];
 
-            return new Proxmox(
-                $config['hostname'],
-                $config['username'],
-                $config['password'],
-                $config['realm'],
-                $config['port']
-            );
-        });
+        foreach ($services as $alias => $class) {
+            $this->app->singleton($alias, function ($app) use ($class) {
+                $config = $app['config']['proxmox'];
+
+                return new $class(
+                    $config['hostname'],
+                    $config['username'],
+                    $config['password'],
+                    $config['realm'],
+                    $config['port']
+                );
+            });
+        }
     }
 
     /**
