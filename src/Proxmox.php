@@ -4,7 +4,7 @@ namespace Irabbi360\Proxmox;
 
 use Exception;
 
-class ProxmoxApi
+class Proxmox
 {
     private $hostname;
     private $username;
@@ -221,7 +221,7 @@ class ProxmoxApi
      * @return array
      * @throws Exception
      */
-    public function currentStatusVM(string $node, int $vmid): array
+    public function statusVM(string $node, int $vmid): array
     {
         return $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/status/current");
     }
