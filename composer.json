@@ -38,6 +38,7 @@
             "aliases": {
                 "ProxmoxNodeVM": "Irabbi360\\Proxmox\\Facades\\ProxmoxNodeVM",
                 "ProxmoxCluster": "Irabbi360\\Proxmox\\Facades\\ProxmoxCluster",
+                "ProxmoxStorage": "Irabbi360\\Proxmox\\Facades\\ProxmoxStorage"
             }
         }
     },
