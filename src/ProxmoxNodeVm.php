@@ -384,12 +384,10 @@ class ProxmoxNodeVm extends Proxmox
             // Append optional parameters if any exist
             if (!empty($optionalParams)) {
                 $diskParams["scsi{$nextId}"] .= $optionalParams;
+                $diskParams["net{$nextId}"] = 'virtio,bridge=vmbr0';
+
+                $diskParams['boot'] = "order=scsi{$nextId};net{$nextId}";
             }
-
-            $diskParams['net0'] = 'virtio,bridge=vmbr0';
-
-            // Debug log
-            error_log("Disk parameters: " . print_r($diskParams, true));
 
             // Apply configuration
             $result = $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/config", $diskParams);
@@ -408,6 +406,16 @@ class ProxmoxNodeVm extends Proxmox
         } catch (Exception $e) {
             throw new Exception("Failed to attach disk: " . $e->getMessage());
         }
+    }
+
+    public function detachDisk($node, $vmid, $disk)
+    {
+        // API endpoint to remove a disk
+        $result = $this->makeRequest('DELETE', "nodes/{$node}/qemu/{$vmid}/config", [
+            'delete' => $disk, // Specify the disk to delete (e.g., 'scsi0')
+        ]);
+
+        return $result;
     }
 
     /**
