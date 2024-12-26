@@ -5,11 +5,13 @@ namespace Irabbi360\Proxmox;
 class ProxmoxStorage extends Proxmox
 {
     /**
-     * @throws \Exception
+     * Storage index.
+     * @param enum     $type   Only list storage of specific type
      */
-    public function storage()
+    public function storage($type = null): array
     {
-        return $this->makeRequest('GET','/version');
+        $params['type'] = !empty($type) ? $type : null;
+        return $this->makeRequest('GET','storage', $params);
     }
 
     /**
@@ -42,6 +44,15 @@ class ProxmoxStorage extends Proxmox
      */
     public function createDirectoryStorage(string $name, string $path, array $options = []): array
     {
+        // Create Directory Storage
+        /*$params = [
+            'storage' => 'local-storage',  // Name of the storage
+            'type' => 'dir',              // Storage type (directory)
+            'path' => '/mnt/local',       // Path to the storage directory
+            'content' => 'images,iso',    // Types of content this storage can hold
+            'shared' => false             // Whether the storage is shared across nodes
+        ];*/
+
         $defaults = [
             'storage' => $name,
             'type' => 'dir',
