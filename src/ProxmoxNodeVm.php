@@ -41,6 +41,90 @@ class ProxmoxNodeVm extends Proxmox
     }
 
     /**
+     * Available OS types in Proxmox
+     *
+     * @var array
+     */
+    private const OS_TYPES = [
+        'ubuntu' => 'other', // For Ubuntu and other modern Linux distributions
+        'centos' => 'l26',   // For CentOS and older Linux distributions
+        'windows' => 'win10' // For Windows
+    ];
+
+    /**
+     * Create a new Virtual Machine
+     *
+     * @param string $node Node name
+     * @param array $params VM configuration parameters
+     * @return array
+     * @throws Exception
+     */
+    public function createVM(string $node, array $params): array
+    {
+        $result = $this->makeRequest('GET', "nodes/{$node}/storage");
+
+        // Get next available VMID if not provided
+        if (!isset($params['vmid'])) {
+            $params['vmid'] = $this->getNextVMID();
+        }
+
+        // Set default values if not provided
+        $defaults = [
+            'cores' => 2,
+            'sockets' => 2,
+            'ostype' => 'other',
+            'onboot' => 1,
+            'scsihw' => 'virtio-scsi-pci',
+            'bootdisk' => 'scsi0',
+        ];
+
+        $params = array_merge($defaults, $params);
+
+        // Required parameters validation
+        $required = ['vmid', 'name', 'ostype', 'memory', 'cores'];
+        foreach ($required as $field) {
+            if (!isset($params[$field])) {
+                throw new Exception("Missing required parameter: {$field}");
+            }
+        }
+
+        // Create VM and get response
+        return $this->makeRequest('POST', "nodes/{$node}/qemu", $params);
+    }
+
+    public function createStorage(array $params): array
+    {
+        // Validate required parameters
+        $required = ['storage', 'type'];
+        foreach ($required as $field) {
+            if (!isset($params[$field])) {
+                throw new \Exception("Missing required parameter: {$field}");
+            }
+        }
+
+        return $this->makeRequest('POST', 'storage', $params);
+    }
+
+    public function waitForTaskCompletion(string $node, string $upid)
+    {
+        do {
+            // Poll task status
+            $status = $this->makeRequest('GET', "nodes/{$node}/tasks/{$upid}/status");
+
+            if ($status['data']['status'] === 'stopped') {
+                if ($status['data']['exitstatus'] === 'OK') {
+                    return true; // Task completed successfully
+                } else {
+                    throw new Exception("Task failed with exit status: " . $status['data']['exitstatus']);
+                }
+            }
+
+            // Wait for a short period before polling again
+            sleep(2);
+        } while (true);
+    }
+
+    /**
      * Get VM status
      *
      * @param string $node Node name
@@ -51,6 +135,17 @@ class ProxmoxNodeVm extends Proxmox
     public function getVMStatus(string $node, int $vmid): array
     {
         return $this->makeRequest('GET', "nodes/{$node}/qemu/{$vmid}/status/current");
+    }
+
+    /**
+     * GET /api2/json/nodes/{node}/qemu/{vmid}
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @throws Exception
+     */
+    public function vmQuery(string $node, int $vmid)
+    {
+        return $this->makeRequest("GET", "nodes/$node/qemu/$vmid/status/current");
     }
 
     /**
@@ -102,7 +197,7 @@ class ProxmoxNodeVm extends Proxmox
      */
     public function statusVM(string $node, int $vmid): array
     {
-        return $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/status/current");
+        return $this->makeRequest('GET', "nodes/{$node}/qemu/{$vmid}/status/current");
     }
 
     /**
@@ -158,57 +253,6 @@ class ProxmoxNodeVm extends Proxmox
     }
 
     /**
-     * Available OS types in Proxmox
-     *
-     * @var array
-     */
-    private const OS_TYPES = [
-        'ubuntu' => 'other', // For Ubuntu and other modern Linux distributions
-        'centos' => 'l26',   // For CentOS and older Linux distributions
-        'windows' => 'win10' // For Windows
-    ];
-
-    /**
-     * Create a new Virtual Machine
-     *
-     * @param string $node Node name
-     * @param array $params VM configuration parameters
-     * @return array
-     * @throws Exception
-     */
-    public function createVM(string $node, array $params): array
-    {
-        // Get next available VMID if not provided
-        if (!isset($params['vmid'])) {
-            $params['vmid'] = $this->getNextVMID();
-        }
-
-        // Set default values if not provided
-        $defaults = [
-            'cores' => 1,
-            'sockets' => 1,
-            'memory' => 512,
-            'ostype' => 'other',
-            'onboot' => 1,
-            'scsihw' => 'virtio-scsi-pci',
-            'bootdisk' => 'scsi0',
-            'net0' => 'virtio,bridge=vmbr0'
-        ];
-
-        $params = array_merge($defaults, $params);
-
-        // Required parameters validation
-        $required = ['vmid', 'name', 'ostype', 'memory', 'cores'];
-        foreach ($required as $field) {
-            if (!isset($params[$field])) {
-                throw new Exception("Missing required parameter: {$field}");
-            }
-        }
-
-        return $this->makeRequest('POST', "nodes/{$node}/qemu", $params);
-    }
-
-    /**
      * @throws Exception
      */
     public function setVMPassword(string $node, int $vmid)
@@ -238,7 +282,7 @@ class ProxmoxNodeVm extends Proxmox
             throw new Exception('Failed to get next VMID');
         }
 
-        return (int) $response['data'];
+        return (int)$response['data'];
     }
 
     /**
@@ -305,19 +349,65 @@ class ProxmoxNodeVm extends Proxmox
             throw new Exception('Storage and size parameters are required');
         }
 
-        // Find next available SCSI disk ID
-        $config = $this->makeRequest('GET', "nodes/{$node}/qemu/{$vmid}/config");
-        $nextId = 0;
+        try {
+            // Get current VM configuration
+            $config = $this->makeRequest('GET', "nodes/{$node}/qemu/{$vmid}/config");
 
-        while (isset($config['data']["scsi{$nextId}"])) {
-            $nextId++;
+            // Find next available SCSI disk ID
+            $nextId = 0;
+            foreach ($config['data'] as $key => $value) {
+                if (preg_match('/^scsi(\d+)$/', $key, $matches)) {
+                    $nextId = max($nextId, (int)$matches[1] + 1);
+                }
+            }
+
+            // Prepare disk parameters - Fixed format
+            $size = preg_match('/^\d+G$/', $params['size']) ? $params['size'] : "{$params['size']}G";
+
+            // Base disk specification - Note the "volume=0" format
+            $diskParams = [
+                "scsi{$nextId}" => "{$params['storage']}:50,size={$size}"
+            ];
+
+            // Add optional parameters
+            $optionalParams = '';
+            if (isset($params['format'])) {
+                $optionalParams .= ",format={$params['format']}";
+            }
+            if (isset($params['cache'])) {
+                $optionalParams .= ",cache={$params['cache']}";
+            }
+            if (isset($params['iothread'])) {
+                $optionalParams .= ",iothread={$params['iothread']}";
+            }
+
+            // Append optional parameters if any exist
+            if (!empty($optionalParams)) {
+                $diskParams["scsi{$nextId}"] .= $optionalParams;
+            }
+
+            $diskParams['net0'] = 'virtio,bridge=vmbr0';
+
+            // Debug log
+            error_log("Disk parameters: " . print_r($diskParams, true));
+
+            // Apply configuration
+            $result = $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/config", $diskParams);
+
+            if (!isset($result['data'])) {
+                throw new Exception('Failed to attach disk: No response data received');
+            }
+
+            return [
+                'success' => true,
+                'disk_id' => "scsi{$nextId}",
+                'config' => $diskParams,
+                'response' => $result
+            ];
+
+        } catch (Exception $e) {
+            throw new Exception("Failed to attach disk: " . $e->getMessage());
         }
-
-        $diskParams = [
-            "scsi{$nextId}" => "{$params['storage']}:{$params['size']}"
-        ];
-
-        return $this->setVMConfig($node, $vmid, $diskParams);
     }
 
     /**
@@ -393,8 +483,9 @@ class ProxmoxNodeVm extends Proxmox
         string $keyName,
         string $keyPath = null,
         string $type = 'ed25519',
-        int $bits = 4096
-    ): array {
+        int    $bits = 4096
+    ): array
+    {
         // Set default path if not provided
         if ($keyPath === null) {
             $keyPath = storage_path('app/ssh');
@@ -478,10 +569,11 @@ class ProxmoxNodeVm extends Proxmox
      * @throws Exception
      */
     public function createUbuntuVMWithSSH(
-        string $node,
-        array $params,
+        string  $node,
+        array   $params,
         ?string $sshKey = null
-    ): array {
+    ): array
+    {
         // Generate new SSH key if none provided
         if ($sshKey === null) {
             $keyName = $params['name'] ?? 'vm-' . time();
@@ -516,7 +608,7 @@ class ProxmoxNodeVm extends Proxmox
     public function configureVMCloudInitNetwork(string $node, int $vmid, $ip, $gateway, $netmask)
     {
         $payload = [
-            "ipconfig0" =>  "{$ip}/{$netmask},gw={$gateway}"
+            "ipconfig0" => "{$ip}/{$netmask},gw={$gateway}"
         ];
 
         return $this->makeRequest('PUT', "nodes/{$node}/qemu/{$vmid}/config", $payload);
