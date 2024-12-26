@@ -158,6 +158,9 @@ class ProxmoxNodeVm extends Proxmox
      */
     public function startVM(string $node, int $vmid): array
     {
+//        return $this->makeRequest('GET', "nodes/{$node}/storage/test-storage-vlan/content");
+//        return $this->makeRequest('GET', "nodes/{$node}/qemu/{$vmid}/config");
+
         return $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/status/start");
     }
 
@@ -385,8 +388,10 @@ class ProxmoxNodeVm extends Proxmox
             if (!empty($optionalParams)) {
                 $diskParams["scsi{$nextId}"] .= $optionalParams;
                 $diskParams["net{$nextId}"] = 'virtio,bridge=vmbr0';
+                $diskParams["ide2"] = 'none,media=cdrom';
+//                $diskParams["ide2"] = 'local:iso/debian-11.6.0-amd64-netinst.iso,media=cdrom';
 
-                $diskParams['boot'] = "order=scsi{$nextId};net{$nextId}";
+                $diskParams['boot'] = "order=scsi{$nextId};ide2;net{$nextId}";
             }
 
             // Apply configuration
