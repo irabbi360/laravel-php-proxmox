@@ -1,5 +1,5 @@
 {
-    "name": "irabbi360/php-proxmox",
+    "name": "irabbi360/laravel-php-proxmox",
     "description": "A PHP package for Proxmox API integration",
     "type": "library",
     "license": "MIT",
