@@ -623,12 +623,12 @@ class ProxmoxNodeVm extends Proxmox
             // Append optional parameters if any exist
             if (!empty($optionalParams)) {
                 $diskParams["scsi{$nextId}"] .= $optionalParams;
-                $diskParams["net{$nextId}"] = 'virtio,bridge=vmbr0';
+                $diskParams["net0"] = 'virtio,bridge=vmbr0,firewall=1';
 //                $diskParams["ide2"] = 'local:iso/debian-11.6.0-amd64-netinst.iso,media=cdrom';
                 $diskParams["ide2"] = 'none,media=cdrom';
 //                $diskParams["ide2"] = 'local:iso/debian-11.6.0-amd64-netinst.iso,media=cdrom';
 
-                $diskParams['boot'] = "order=scsi{$nextId};ide2;net{$nextId}";
+                $diskParams['boot'] = "order=scsi{$nextId};ide2;net0";
             }
 
             // Apply configuration
