@@ -114,7 +114,7 @@ class ProxmoxNodeVm extends Proxmox
 
             if ($status['data']['status'] === 'stopped') {
                 if ($status['data']['exitstatus'] === 'OK') {
-                    return true; // Task completed successfully
+                    return $status['data']; // Task completed successfully
                 } else {
                     throw new Exception("Task failed with exit status: " . $status['data']['exitstatus']);
                 }
