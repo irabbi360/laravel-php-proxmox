@@ -56,13 +56,11 @@ class ProxmoxNodeVm extends Proxmox
      *
      * @param string $node Node name
      * @param array $params VM configuration parameters
-     * @return array
+     * @return \Illuminate\Http\JsonResponse
      * @throws Exception
      */
-    public function createVM(string $node, array $params): array
+    public function createVM(string $node, array $params): \Illuminate\Http\JsonResponse
     {
-        $result = $this->makeRequest('GET', "nodes/{$node}/storage");
-
         // Get next available VMID if not provided
         if (!isset($params['vmid'])) {
             $params['vmid'] = $this->getNextVMID();
@@ -89,8 +87,22 @@ class ProxmoxNodeVm extends Proxmox
             }
         }
 
+        $config = ['cpu' => 'x86-64-v2-AES'];
+
         // Create VM and get response
-        return $this->makeRequest('POST', "nodes/{$node}/qemu", $params);
+        $response = $this->makeRequest('POST', "nodes/{$node}/qemu", $params);
+        if (!isset($response['data'])) {
+            return response()->json(['success' => false, 'message' => 'VM create fail!']);
+        }
+
+        $this->configVM($node, $params['vmid'], $config);
+
+        return response()->json(['success' => true, 'data' => $response, 'message' => 'VM created successfully']);
+    }
+
+    protected function configVM(string $node, int $vmId, array $params): array
+    {
+        return $this->makeRequest('PUT', "nodes/{$node}/qemu/{$vmId}/config", $params);
     }
 
     public function createStorage(array $params): array
@@ -114,7 +126,7 @@ class ProxmoxNodeVm extends Proxmox
 
             if ($status['data']['status'] === 'stopped') {
                 if ($status['data']['exitstatus'] === 'OK') {
-                    return true; // Task completed successfully
+                    return $status['data']; // Task completed successfully
                 } else {
                     throw new Exception("Task failed with exit status: " . $status['data']['exitstatus']);
                 }
@@ -606,7 +618,7 @@ class ProxmoxNodeVm extends Proxmox
 
             // Base disk specification - Note the "volume=0" format
             $diskParams = [
-                "scsi{$nextId}" => "{$params['storage']}:50,size={$size}"
+                "scsi{$nextId}" => "{$params['storage']}:$size,size={$size}"
             ];
 
             // Add optional parameters
@@ -626,10 +638,10 @@ class ProxmoxNodeVm extends Proxmox
                 $diskParams["scsi{$nextId}"] .= $optionalParams;
                 $diskParams["net0"] = 'virtio,bridge=vmbr0,firewall=1';
 //                $diskParams["ide2"] = 'local:iso/debian-11.6.0-amd64-netinst.iso,media=cdrom';
-                $diskParams["ide2"] = 'none,media=cdrom';
+//                $diskParams["ide2"] = 'local:iso/ubuntu-24.04.1-live-server-amd64.iso,media=cdrom';
 //                $diskParams["ide2"] = 'local:iso/debian-11.6.0-amd64-netinst.iso,media=cdrom';
 
-                $diskParams['boot'] = "order=scsi{$nextId};ide2;net0";
+                $diskParams['boot'] = "order=ide2;scsi{$nextId};net0";
             }
 
             // Apply configuration
