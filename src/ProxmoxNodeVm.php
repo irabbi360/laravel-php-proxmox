@@ -76,6 +76,7 @@ class ProxmoxNodeVm extends Proxmox
             'onboot' => 1,
             'scsihw' => 'virtio-scsi-pci',
             'bootdisk' => 'scsi0',
+            'agent' => 1, // Enable QEMU Guest Agent
         ];
 
         $params = array_merge($defaults, $params);
