@@ -76,6 +76,7 @@ class ProxmoxNodeVm extends Proxmox
             'onboot' => 1,
             'scsihw' => 'virtio-scsi-pci',
             'bootdisk' => 'scsi0',
+            'agent' => 1, // Enable QEMU Guest Agent
         ];
 
         $params = array_merge($defaults, $params);
@@ -158,7 +159,246 @@ class ProxmoxNodeVm extends Proxmox
      */
     public function startVM(string $node, int $vmid): array
     {
+//        return  $this->getDetailedAgentStatus($node,$vmid); //$this->checkGuestAgentStatus($node, $vmid);
+//        $networkParams = [
+//            'ip' => '208.72.36.127',           // Your public IP
+//            'subnet_mask' => '24',              // Subnet mask (CIDR notation)
+//            'gateway' => '208.72.36.65',        // Your gateway IP
+////            'nameserver' => '8.8.8.8',          // Optional: DNS server
+////            'searchdomain' => 'example.com'     // Optional: Search domain
+//        ];
+//
+//        return $this->configureNetwork($node, $vmid, $networkParams);
+
+//        return $this->makeRequest('GET', "nodes/{$node}/storage/test-storage-vlan/content");
+//        return $this->makeRequest('GET', "nodes/{$node}/qemu/{$vmid}/config");
+
         return $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/status/start");
+    }
+
+    /**
+     * Fix non-running guest agent
+     */
+    public function fixGuestAgent(string $node, int $vmid): array {
+        try {
+            // 1. First ensure agent is enabled in config with correct settings
+            $configResult = $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/config", [
+                'agent' => 'enabled=1',
+                'ostype' => 'l26'  // Linux 2.6+ kernel
+            ]);
+
+            // 2. Get current VM status
+            $vmStatus = $this->makeRequest('GET', "nodes/{$node}/qemu/{$vmid}/status/current");
+            $isRunning = isset($vmStatus['data']['status']) && $vmStatus['data']['status'] === 'running';
+
+            // 3. If VM is running, need to restart it
+            if ($isRunning) {
+                // Stop VM
+                $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/status/stop");
+
+                // Wait for VM to stop
+                sleep(15);
+
+                // Start VM
+                $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/status/start");
+
+                // Wait for VM to start
+                sleep(20);
+            }
+
+            // 4. Check agent status after restart
+            try {
+                $agentStatus = $this->makeRequest('GET', "nodes/{$node}/qemu/{$vmid}/agent/ping");
+                $agentRunning = true;
+            } catch (Exception $e) {
+                $agentRunning = false;
+            }
+
+            return [
+                'success' => true,
+                'agent_enabled_in_config' => true,
+                'agent_running' => $agentRunning,
+                'vm_restarted' => $isRunning,
+                'next_steps' => !$agentRunning ? [
+                    'Install guest agent package inside VM:',
+                    'For Ubuntu/Debian: apt install qemu-guest-agent',
+                    'For CentOS/RHEL: yum install qemu-guest-agent',
+                    'Then run: systemctl start qemu-guest-agent'
+                ] : []
+            ];
+
+        } catch (Exception $e) {
+            throw new Exception("Failed to fix guest agent: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Check detailed guest agent status
+     */
+    public function getDetailedAgentStatus(string $node, int $vmid): array {
+        try {
+            // Get VM configuration
+            $config = $this->makeRequest('GET', "nodes/{$node}/qemu/{$vmid}/config");
+
+            // Get current status
+            $status = $this->makeRequest('GET', "nodes/{$node}/qemu/{$vmid}/status/current");
+
+            // Try to ping agent
+            try {
+                $ping = $this->makeRequest('GET', "nodes/{$node}/qemu/{$vmid}/agent/ping");
+                $agentResponding = true;
+            } catch (Exception $e) {
+                $agentResponding = false;
+            }
+
+            return [
+                'config_status' => [
+                    'agent_enabled' => isset($config['data']['agent']) && strpos($config['data']['agent'], 'enabled=1') !== false,
+                    'os_type' => $config['data']['ostype'] ?? 'unknown'
+                ],
+                'runtime_status' => [
+                    'vm_status' => $status['data']['status'] ?? 'unknown',
+                    'agent_responding' => $agentResponding
+                ]
+            ];
+
+        } catch (Exception $e) {
+            throw new Exception("Failed to get agent status: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Enable QEMU Guest Agent for a VM
+     */
+    public function enableGuestAgent(string $node, int $vmid): array {
+        try {
+            // Enable QEMU Guest Agent in VM configuration
+            $config = [
+                'agent' => 1,  // Enable QEMU Guest Agent
+                'ostype' => 'l26'  // Linux 2.6+/3.x/4.x Kernel
+            ];
+
+            $result = $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/config", $config);
+
+            return [
+                'success' => true,
+                'config' => $config,
+                'response' => $result
+            ];
+
+        } catch (Exception $e) {
+            throw new Exception("Failed to enable guest agent: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Configure and start QEMU Guest Agent
+     */
+    public function configureGuestAgent(string $node, int $vmid): array {
+        try {
+            // First, enable the QEMU guest agent in VM config
+            $configResult = $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/config", [
+                'agent' => 'enabled=1,fstrim_cloned_disks=1',
+                'ostype' => 'l26'  // For Linux VMs
+            ]);
+
+            // Stop the VM if it's running
+            $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/status/stop");
+
+            // Wait for VM to stop
+            sleep(10);
+
+            // Start the VM to apply changes
+            $startResult = $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/status/start");
+
+            // Check agent status (might take a few seconds to initialize)
+            sleep(20);  // Wait for VM to fully start
+
+            $status = $this->makeRequest('GET', "nodes/{$node}/qemu/{$vmid}/agent/ping");
+
+            return [
+                'success' => true,
+                'config_result' => $configResult,
+                'start_result' => $startResult,
+                'agent_status' => $status
+            ];
+
+        } catch (Exception $e) {
+            throw new Exception("Failed to configure guest agent: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Check Guest Agent status
+     */
+    public function checkGuestAgentStatus(string $node, int $vmid): array {
+        try {
+            // Get VM status including agent info
+            $status = $this->makeRequest('GET', "nodes/{$node}/qemu/{$vmid}/status/current");
+
+            // Try to ping the agent
+            try {
+                $ping = $this->makeRequest('GET', "nodes/{$node}/qemu/{$vmid}/agent/ping");
+                $agentRunning = true;
+            } catch (Exception $e) {
+                $agentRunning = false;
+            }
+
+            return [
+                'success' => true,
+                'agent_enabled' => isset($status['data']['agent']) && $status['data']['agent'] == 1,
+                'agent_running' => $agentRunning,
+                'status' => $status['data']
+            ];
+
+        } catch (Exception $e) {
+            throw new Exception("Failed to check guest agent status: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Configure network settings for a VM
+     */
+    public function configureNetwork(string $node, int $vmid, array $networkParams): array {
+        try {
+            // Validate IP format
+            if (!filter_var($networkParams['ip'], FILTER_VALIDATE_IP)) {
+                throw new Exception('Invalid IP address format');
+            }
+            if (!filter_var($networkParams['gateway'], FILTER_VALIDATE_IP)) {
+                throw new Exception('Invalid gateway IP format');
+            }
+
+            // Format the network configuration
+            $netConfig = [
+                'ipconfig0' => sprintf(
+                    'ip=%s/%s,gw=%s',
+                    $networkParams['ip'],
+                    $networkParams['subnet_mask'] ?? '24',
+                    $networkParams['gateway']
+                )
+            ];
+
+            // Add optional network parameters
+            if (isset($networkParams['nameserver'])) {
+                $netConfig['nameserver'] = $networkParams['nameserver'];
+            }
+            if (isset($networkParams['searchdomain'])) {
+                $netConfig['searchdomain'] = $networkParams['searchdomain'];
+            }
+
+            // Apply network configuration
+            $result = $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/config", $netConfig);
+
+            return [
+                'success' => true,
+                'config' => $netConfig,
+                'response' => $result
+            ];
+
+        } catch (Exception $e) {
+            throw new Exception("Failed to configure network: " . $e->getMessage());
+        }
     }
 
     /**
@@ -384,12 +624,13 @@ class ProxmoxNodeVm extends Proxmox
             // Append optional parameters if any exist
             if (!empty($optionalParams)) {
                 $diskParams["scsi{$nextId}"] .= $optionalParams;
+                $diskParams["net0"] = 'virtio,bridge=vmbr0,firewall=1';
+//                $diskParams["ide2"] = 'local:iso/debian-11.6.0-amd64-netinst.iso,media=cdrom';
+                $diskParams["ide2"] = 'none,media=cdrom';
+//                $diskParams["ide2"] = 'local:iso/debian-11.6.0-amd64-netinst.iso,media=cdrom';
+
+                $diskParams['boot'] = "order=scsi{$nextId};ide2;net0";
             }
-
-            $diskParams['net0'] = 'virtio,bridge=vmbr0';
-
-            // Debug log
-            error_log("Disk parameters: " . print_r($diskParams, true));
 
             // Apply configuration
             $result = $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/config", $diskParams);
@@ -408,6 +649,16 @@ class ProxmoxNodeVm extends Proxmox
         } catch (Exception $e) {
             throw new Exception("Failed to attach disk: " . $e->getMessage());
         }
+    }
+
+    public function detachDisk($node, $vmid, $disk)
+    {
+        // API endpoint to remove a disk
+        $result = $this->makeRequest('DELETE', "nodes/{$node}/qemu/{$vmid}/config", [
+            'delete' => $disk, // Specify the disk to delete (e.g., 'scsi0')
+        ]);
+
+        return $result;
     }
 
     /**
