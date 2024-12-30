@@ -59,7 +59,7 @@ class ProxmoxNodeVm extends Proxmox
      * @return \Illuminate\Http\JsonResponse
      * @throws Exception
      */
-    public function createVM(string $node, array $params): \Illuminate\Http\JsonResponse
+    public function createVM(string $node, array $params)
     {
         // Get next available VMID if not provided
         if (!isset($params['vmid'])) {
@@ -67,7 +67,7 @@ class ProxmoxNodeVm extends Proxmox
         }
 
         // Set default values if not provided
-        $defaults = [
+       /* $defaults = [
             'cores' => 2,
             'sockets' => 2,
             'ostype' => 'other',
@@ -77,7 +77,7 @@ class ProxmoxNodeVm extends Proxmox
             'agent' => 1, // Enable QEMU Guest Agent
         ];
 
-        $params = array_merge($defaults, $params);
+        $params = array_merge($defaults, $params);*/
 
         // Required parameters validation
         $required = ['vmid', 'name', 'ostype', 'memory', 'cores'];
@@ -97,7 +97,14 @@ class ProxmoxNodeVm extends Proxmox
 
         $this->configVM($node, $params['vmid'], $config);
 
-        return response()->json(['success' => true, 'data' => $response, 'message' => 'VM created successfully']);
+        $successResponse = [
+            'success' => true,
+            'data' => $response['data'],
+            'node' => $node,
+            'vmid' => $params['vmid'],
+        ];
+
+        return response()->json(['success' => true, 'data' => $successResponse, 'message' => 'VM created successfully']);
     }
 
     protected function configVM(string $node, int $vmId, array $params): array
