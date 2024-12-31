@@ -3,6 +3,7 @@
 namespace Irabbi360\Proxmox;
 
 use Exception;
+use Irabbi360\Proxmox\Helpers\ResponseHelper;
 
 class ProxmoxNodeVm extends Proxmox
 {
@@ -92,19 +93,18 @@ class ProxmoxNodeVm extends Proxmox
         // Create VM and get response
         $response = $this->makeRequest('POST', "nodes/{$node}/qemu", $params);
         if (!isset($response['data'])) {
-            return response()->json(['success' => false, 'message' => 'VM create fail!']);
+            return ResponseHelper::generate(false, 'VM create fail!');
         }
 
         $this->configVM($node, $params['vmid'], $config);
 
         $successResponse = [
-            'success' => true,
             'data' => $response['data'],
             'node' => $node,
             'vmid' => $params['vmid'],
         ];
 
-        return response()->json(['success' => true, 'data' => $successResponse, 'message' => 'VM created successfully']);
+        return ResponseHelper::generate(true, 'VM created successfully', $successResponse);
     }
 
     protected function configVM(string $node, int $vmId, array $params): array
@@ -173,26 +173,189 @@ class ProxmoxNodeVm extends Proxmox
      *
      * @param string $node Node name
      * @param int $vmid VM ID
-     * @return array
      * @throws Exception
      */
-    public function startVM(string $node, int $vmid): array
+    public function startVM(string $node, int $vmid)
     {
-//        return  $this->getDetailedAgentStatus($node,$vmid); //$this->checkGuestAgentStatus($node, $vmid);
-//        $networkParams = [
-//            'ip' => '208.72.36.127',           // Your public IP
-//            'subnet_mask' => '24',              // Subnet mask (CIDR notation)
-//            'gateway' => '208.72.36.65',        // Your gateway IP
-////            'nameserver' => '8.8.8.8',          // Optional: DNS server
-////            'searchdomain' => 'example.com'     // Optional: Search domain
-//        ];
-//
-//        return $this->configureNetwork($node, $vmid, $networkParams);
+        $response = $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/status/start");
+        if (!isset($response['data'])) {
+            return ResponseHelper::generate(false, 'VM start fail!');
+        }
 
-//        return $this->makeRequest('GET', "nodes/{$node}/storage/test-storage-vlan/content");
-//        return $this->makeRequest('GET', "nodes/{$node}/qemu/{$vmid}/config");
+        $successResponse = [
+            'data' => $response['data'],
+            'node' => $node,
+            'vmid' => $vmid,
+        ];
 
-        return $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/status/start");
+        return ResponseHelper::generate(true, 'VM Started', $successResponse);
+    }
+
+    /**
+     * Stop VM
+     *
+     * @param string $node Node name
+     * @param int $vmid VM ID
+     * @throws Exception
+     */
+    public function stopVM(string $node, int $vmid)
+    {
+        $response = $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/status/stop");
+
+        if (!isset($response['data'])) {
+            return ResponseHelper::generate(false, 'VM stop fail!');
+        }
+
+        $successResponse = [
+            'data' => $response['data'],
+            'node' => $node,
+            'vmid' => $vmid,
+        ];
+        return ResponseHelper::generate(true, 'VM stopped', $successResponse);
+    }
+
+    /**
+     * Reset VM
+     *
+     * @param string $node Node name
+     * @param int $vmid VM ID
+     * @throws Exception
+     */
+    public function resetVM(string $node, int $vmid)
+    {
+        $response = $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/status/reset");
+
+        if (!isset($response['data'])) {
+            return ResponseHelper::generate(false, 'VM reset fail!');
+        }
+
+        $successResponse = [
+            'data' => $response['data'],
+            'node' => $node,
+            'vmid' => $vmid,
+        ];
+
+        return ResponseHelper::generate(true, 'VM reset successfully', $successResponse);
+    }
+
+    /**
+     * Current Status VM
+     *
+     * @param string $node Node name
+     * @param int $vmid VM ID
+     * @throws Exception
+     */
+    public function statusVM(string $node, int $vmid)
+    {
+        $response = $this->makeRequest('GET', "nodes/{$node}/qemu/{$vmid}/status/current");
+
+        if (!isset($response['data'])) {
+            return ResponseHelper::generate(false, 'VM status fail!');
+        }
+
+        $successResponse = [
+            'data' => $response['data'],
+            'node' => $node,
+            'vmid' => $vmid,
+        ];
+
+        return ResponseHelper::generate(true, 'VM status', $successResponse);
+    }
+
+    /**
+     * Reboot VM
+     *
+     * @param string $node Node name
+     * @param int $vmid VM ID
+     * @throws Exception
+     */
+    public function rebootVM(string $node, int $vmid)
+    {
+        $response = $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/status/reboot");
+
+        if (!isset($response['data'])) {
+            return ResponseHelper::generate(false, 'VM reboot fail!');
+        }
+
+        $successResponse = [
+            'data' => $response['data'],
+            'node' => $node,
+            'vmid' => $vmid,
+        ];
+
+        return ResponseHelper::generate(true, 'VM rebooted', $successResponse);
+    }
+
+    /**
+     * Shutdown VM
+     *
+     * @param string $node Node name
+     * @param int $vmid VM ID
+     * @throws Exception
+     */
+    public function shutdownVM(string $node, int $vmid)
+    {
+        $response = $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/status/shutdown");
+
+        if (!isset($response['data'])) {
+            return ResponseHelper::generate(false, 'VM shutdown fail!');
+        }
+
+        $successResponse = [
+            'data' => $response['data'],
+            'node' => $node,
+            'vmid' => $vmid,
+        ];
+
+        return ResponseHelper::generate(true, 'VM shutdown', $successResponse);
+    }
+
+    /**
+     * Resume VM
+     *
+     * @param string $node Node name
+     * @param int $vmid VM ID
+     * @throws Exception
+     */
+    public function resumeVM(string $node, int $vmid)
+    {
+        $response = $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/status/resume");
+
+        if (!isset($response['data'])) {
+            return ResponseHelper::generate(false, 'VM resume fail!');
+        }
+
+        $successResponse = [
+            'data' => $response['data'],
+            'node' => $node,
+            'vmid' => $vmid,
+        ];
+
+        return ResponseHelper::generate(true, 'VM resumed', $successResponse);
+    }
+
+    /**
+     * Suspend VM
+     *
+     * @param string $node Node name
+     * @param int $vmid VM ID
+     * @throws Exception
+     */
+    public function suspendVM(string $node, int $vmid)
+    {
+        $response = $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/status/suspend");
+
+        if (!isset($response['data'])) {
+            return ResponseHelper::generate(false, 'VM suspend fail!');
+        }
+
+        $successResponse = [
+            'data' => $response['data'],
+            'node' => $node,
+            'vmid' => $vmid,
+        ];
+
+        return ResponseHelper::generate(true, 'VM suspended', $successResponse);
     }
 
     /**
@@ -418,97 +581,6 @@ class ProxmoxNodeVm extends Proxmox
         } catch (Exception $e) {
             throw new Exception("Failed to configure network: " . $e->getMessage());
         }
-    }
-
-    /**
-     * Stop VM
-     *
-     * @param string $node Node name
-     * @param int $vmid VM ID
-     * @return array
-     * @throws Exception
-     */
-    public function stopVM(string $node, int $vmid): array
-    {
-        return $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/status/stop");
-    }
-
-    /**
-     * Reset VM
-     *
-     * @param string $node Node name
-     * @param int $vmid VM ID
-     * @return array
-     * @throws Exception
-     */
-    public function resetVM(string $node, int $vmid): array
-    {
-        return $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/status/reset");
-    }
-
-    /**
-     * Current Status VM
-     *
-     * @param string $node Node name
-     * @param int $vmid VM ID
-     * @return array
-     * @throws Exception
-     */
-    public function statusVM(string $node, int $vmid): array
-    {
-        return $this->makeRequest('GET', "nodes/{$node}/qemu/{$vmid}/status/current");
-    }
-
-    /**
-     * Reboot VM
-     *
-     * @param string $node Node name
-     * @param int $vmid VM ID
-     * @return array
-     * @throws Exception
-     */
-    public function rebootVM(string $node, int $vmid): array
-    {
-        return $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/status/reboot");
-    }
-
-    /**
-     * Shutdown VM
-     *
-     * @param string $node Node name
-     * @param int $vmid VM ID
-     * @return array
-     * @throws Exception
-     */
-    public function shutdownVM(string $node, int $vmid): array
-    {
-        return $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/status/shutdown");
-    }
-
-    /**
-     * Resume VM
-     *
-     * @param string $node Node name
-     * @param int $vmid VM ID
-     * @return array
-     * @throws Exception
-     */
-    public function resumeVM(string $node, int $vmid): array
-    {
-        return $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/status/resume");
-    }
-
-    /**
-     * Suspend VM
-     *
-     * @param string $node Node name
-     * @param int $vmid VM ID
-     * @return array
-     * @throws Exception
-     */
-    public function suspendVM(string $node, int $vmid): array
-    {
-        return $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/status/suspend");
     }
 
     /**
@@ -896,10 +968,9 @@ class ProxmoxNodeVm extends Proxmox
      * @param int $vmid VM ID
      * @param bool $force Force delete even if running (will stop VM first)
      * @param bool $purge Remove VM disk
-     * @return array
      * @throws Exception
      */
-    public function deleteVM(string $node, int $vmid, bool $force = false, bool $purge = true): array
+    public function deleteVM(string $node, int $vmid, bool $force = false, bool $purge = true)
     {
         // Check if VM exists
         $vmStatus = $this->makeRequest('GET', "nodes/{$node}/qemu/{$vmid}/status/current");
@@ -942,9 +1013,16 @@ class ProxmoxNodeVm extends Proxmox
         }
 
         try {
-            return $this->makeRequest('DELETE', "nodes/{$node}/qemu/{$vmid}", $params);
+            $response = $this->makeRequest('DELETE', "nodes/{$node}/qemu/{$vmid}", $params);
+            $successResponse = [
+                'data' => $response['data'],
+                'node' => $node,
+                'vmid' => $vmid,
+            ];
+            return response()->json(['success' => true, 'data' => $successResponse, 'message' => "VM Deleted successfully"]);
         } catch (Exception $e) {
-            throw new Exception("Failed to delete VM {$vmid}: " . $e->getMessage());
+//            throw new Exception();
+            return response()->json(['success' => false, 'message' => "Failed to delete VM {$vmid}: " . $e->getMessage()]);
         }
     }
 
