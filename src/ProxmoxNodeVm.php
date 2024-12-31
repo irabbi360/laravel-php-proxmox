@@ -731,20 +731,16 @@ class ProxmoxNodeVm extends Proxmox
      * @param array $params Disk parameters
      * @throws Exception
      */
-    public function attachDisk(string $node, int $vmid, array $params): array
+    public function attachDisk(string $node, int $vmid, array $params)
     {
         // Validate required parameters
         if (!isset($params['storage']) || !isset($params['size'])) {
-            return ResponseHelper::generate(false, 'Storage and size parameters are required');
+            return ResponseHelper::generate(false,'Storage and size parameters are required');
         }
 
         try {
             // Get current VM configuration
             $config = $this->makeRequest('GET', "nodes/{$node}/qemu/{$vmid}/config");
-
-            if (!isset($config['data']) || !is_array($config['data'])) {
-                return ResponseHelper::generate(false, 'Failed to retrieve VM configuration');
-            }
 
             // Find next available SCSI disk ID
             $nextId = 0;
@@ -755,11 +751,12 @@ class ProxmoxNodeVm extends Proxmox
             }
 
             // Prepare disk parameters - Fixed format
-            $size = preg_match('/^\d+G$/', $params['size']) ? $params['size'] : "{$params['size']}G";
+//            $size = preg_match('/^\d+G$/', $params['size']) ? $params['size'] : "{$params['size']}";
+            $size = preg_replace('/\D/', '', $params['size']);;
 
             // Base disk specification - Note the "volume=0" format
             $diskParams = [
-                "scsi{$nextId}" => "{$params['storage']},size={$size}"
+                "scsi{$nextId}" => "{$params['storage']}:{$size}"
             ];
 
             // Add optional parameters
@@ -778,11 +775,9 @@ class ProxmoxNodeVm extends Proxmox
             if (!empty($optionalParams)) {
                 $diskParams["scsi{$nextId}"] .= $optionalParams;
                 $diskParams["net0"] = 'virtio,bridge=vmbr0,firewall=1';
-//                $diskParams["ide2"] = 'local:iso/debian-11.6.0-amd64-netinst.iso,media=cdrom';
-//                $diskParams["ide2"] = 'local:iso/ubuntu-24.04.1-live-server-amd64.iso,media=cdrom';
-//                $diskParams["ide2"] = 'local:iso/debian-11.6.0-amd64-netinst.iso,media=cdrom';
 
-                $diskParams['boot'] = "order=ide2;scsi{$nextId};net0";
+                $diskParams['boot'] = "order=scsi{$nextId};net0";
+//                $diskParams['boot'] = "order=ide2;scsi{$nextId};net0";
             }
 
             // Apply configuration
@@ -792,15 +787,16 @@ class ProxmoxNodeVm extends Proxmox
                 throw new Exception('Failed to attach disk: No response data received');
             }
 
-            return [
-                'success' => true,
+            $successResponse = [
                 'disk_id' => "scsi{$nextId}",
                 'config' => $diskParams,
-                'response' => $result
+                'data' => $result['data']
             ];
 
+            return ResponseHelper::generate(true, 'Disk attach success', $successResponse);
+
         } catch (Exception $e) {
-            throw new Exception("Failed to attach disk: " . $e->getMessage());
+            return ResponseHelper::generate(false,"Failed to attach disk: " . $e->getMessage());
         }
     }
 
