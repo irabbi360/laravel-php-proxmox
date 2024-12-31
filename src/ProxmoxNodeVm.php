@@ -359,6 +359,65 @@ class ProxmoxNodeVm extends Proxmox
     }
 
     /**
+     * Rename a Virtual Machine
+     *
+     * @param string $node Node name
+     * @param int $vmid VM ID
+     * @param string $newName New name for the VM
+     * @throws Exception
+     */
+    public function renameVM(string $node, int $vmid, string $newName)
+    {
+        try {
+            // First, check if VM exists
+            $vmStatus = $this->makeRequest('GET', "nodes/{$node}/qemu/{$vmid}/status/current");
+
+            if (!isset($vmStatus['data'])) {
+                return [
+                    'success' => false,
+                    'message' => "VM {$vmid} not found on node {$node}",
+                    'data' => null
+                ];
+            }
+
+            // Check if VM is running
+            if ($vmStatus['data']['status'] === 'running') {
+                return [
+                    'success' => false,
+                    'message' => "Cannot rename running VM. Please stop the VM first.",
+                    'data' => null
+                ];
+            }
+
+            // Set new name
+            $result = $this->setVMConfig($node, $vmid, [
+                'name' => $newName
+            ]);
+
+            if (isset($result['success']) && $result['success']) {
+                return [
+                    'success' => true,
+                    'message' => "VM renamed successfully.",
+                    'data' => $result['data'] ?? null
+                ];
+            }
+
+            return [
+                'success' => false,
+                'message' => "Failed to rename VM.",
+                'data' => $result['data'] ?? null
+            ];
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+                'data' => null
+            ];
+        }
+    }
+
+
+    /**
      * Fix non-running guest agent
      */
     public function fixGuestAgent(string $node, int $vmid): array {
@@ -670,19 +729,22 @@ class ProxmoxNodeVm extends Proxmox
      * @param string $node Node name
      * @param int $vmid VM ID
      * @param array $params Disk parameters
-     * @return array
      * @throws Exception
      */
     public function attachDisk(string $node, int $vmid, array $params): array
     {
         // Validate required parameters
         if (!isset($params['storage']) || !isset($params['size'])) {
-            throw new Exception('Storage and size parameters are required');
+            return ResponseHelper::generate(false, 'Storage and size parameters are required');
         }
 
         try {
             // Get current VM configuration
             $config = $this->makeRequest('GET', "nodes/{$node}/qemu/{$vmid}/config");
+
+            if (!isset($config['data']) || !is_array($config['data'])) {
+                return ResponseHelper::generate(false, 'Failed to retrieve VM configuration');
+            }
 
             // Find next available SCSI disk ID
             $nextId = 0;
@@ -697,7 +759,7 @@ class ProxmoxNodeVm extends Proxmox
 
             // Base disk specification - Note the "volume=0" format
             $diskParams = [
-                "scsi{$nextId}" => "{$params['storage']}:$size,size={$size}"
+                "scsi{$nextId}" => "{$params['storage']},size={$size}"
             ];
 
             // Add optional parameters
@@ -750,65 +812,6 @@ class ProxmoxNodeVm extends Proxmox
         ]);
 
         return $result;
-    }
-
-    /**
-     * Rename a Virtual Machine
-     *
-     * @param string $node Node name
-     * @param int $vmid VM ID
-     * @param string $newName New name for the VM
-     * @return array
-     * @throws Exception
-     */
-    public function renameVM(string $node, int $vmid, string $newName): array
-    {
-        try {
-            // First, check if VM exists
-            $vmStatus = $this->makeRequest('GET', "nodes/{$node}/qemu/{$vmid}/status/current");
-
-            if (!isset($vmStatus['data'])) {
-                return [
-                    'success' => false,
-                    'message' => "VM {$vmid} not found on node {$node}",
-                    'data' => null
-                ];
-            }
-
-            // Check if VM is running
-            if ($vmStatus['data']['status'] === 'running') {
-                return [
-                    'success' => false,
-                    'message' => "Cannot rename running VM. Please stop the VM first.",
-                    'data' => null
-                ];
-            }
-
-            // Set new name
-            $result = $this->setVMConfig($node, $vmid, [
-                'name' => $newName
-            ]);
-
-            if (isset($result['success']) && $result['success']) {
-                return [
-                    'success' => true,
-                    'message' => "VM renamed successfully.",
-                    'data' => $result['data'] ?? null
-                ];
-            }
-
-            return [
-                'success' => false,
-                'message' => "Failed to rename VM.",
-                'data' => $result['data'] ?? null
-            ];
-        } catch (Exception $e) {
-            return [
-                'success' => false,
-                'message' => $e->getMessage(),
-                'data' => null
-            ];
-        }
     }
 
     /**
