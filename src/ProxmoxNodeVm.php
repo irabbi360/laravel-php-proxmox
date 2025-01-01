@@ -15,7 +15,12 @@ class ProxmoxNodeVm extends Proxmox
      */
     public function version(): array
     {
-        return $this->makeRequest('GET', 'version');
+        $response = $this->makeRequest('GET', 'version');
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'version fetch fail!');
+        }
+        return ResponseHelper::generate(true,'version!', $response['data']);
     }
 
     /**
@@ -26,7 +31,12 @@ class ProxmoxNodeVm extends Proxmox
      */
     public function getNodes(): array
     {
-        return $this->makeRequest('GET', 'nodes');
+        $response = $this->makeRequest('GET', 'nodes');
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'nodes fetch fail!');
+        }
+        return ResponseHelper::generate(true,'nodes list!', $response['data']);
     }
 
     /**
@@ -38,7 +48,12 @@ class ProxmoxNodeVm extends Proxmox
      */
     public function getVMs(string $node): array
     {
-        return $this->makeRequest('GET', "nodes/{$node}/qemu");
+        $response = $this->makeRequest('GET', "nodes/{$node}/qemu");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'node vms fail!');
+        }
+        return ResponseHelper::generate(true,'node vm list!', $response['data']);
     }
 
     /**
@@ -122,7 +137,12 @@ class ProxmoxNodeVm extends Proxmox
             }
         }
 
-        return $this->makeRequest('POST', 'storage', $params);
+        $response = $this->makeRequest('POST', 'storage', $params);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'storage create fail!');
+        }
+        return ResponseHelper::generate(true,'storage created!', $response['data']);
     }
 
     public function waitForTaskCompletion(string $node, string $upid)
@@ -154,7 +174,12 @@ class ProxmoxNodeVm extends Proxmox
      */
     public function getVMStatus(string $node, int $vmid): array
     {
-        return $this->makeRequest('GET', "nodes/{$node}/qemu/{$vmid}/status/current");
+        $response = $this->makeRequest('GET', "nodes/{$node}/qemu/{$vmid}/status/current");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'VM status check fail!');
+        }
+        return ResponseHelper::generate(true,'VM status!', $response['data']);
     }
 
     /**
@@ -407,6 +432,7 @@ class ProxmoxNodeVm extends Proxmox
                 'message' => "Failed to rename VM.",
                 'data' => $result['data'] ?? null
             ];
+
         } catch (Exception $e) {
             return [
                 'success' => false,

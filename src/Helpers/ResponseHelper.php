@@ -9,7 +9,7 @@ class ResponseHelper
      * @param bool $success Indicates if the operation was successful
      * @param string $message Response message
      * @param array|null $data Additional data to include in the response
-     * @return \Illuminate\Http\JsonResponse
+     * @return array
      */
     public static function generate(bool $success, string $message, array $data = null)
     {
@@ -22,6 +22,6 @@ class ResponseHelper
             $response['data'] = $data;
         }
 
-        return response()->json($response);
+        return $response;
     }
 }
