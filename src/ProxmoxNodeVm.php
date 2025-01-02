@@ -984,12 +984,36 @@ class ProxmoxNodeVm extends Proxmox
 
     public function configureVMCloudInitNetwork(string $node, int $vmid, $ip, $gateway, $netmask)
     {
-        $payload = [
-            "ipconfig0" => "{$ip}/{$netmask},gw={$gateway}"
+        $params = [
+            "ipconfig0" => "ip={$ip}/{$netmask},gw={$gateway}"
         ];
 
-        return $this->makeRequest('PUT', "nodes/{$node}/qemu/{$vmid}/config", $payload);
+        $response = $this->makeRequest('PUT', "nodes/{$node}/qemu/{$vmid}/config", $params);
+
+        if (!isset($response['data'])){
+            $successResponse = [
+                'node' => $node,
+                'vmid' => $vmid,
+                'public_ip' => $ip,
+                'netmask' => $netmask,
+                'gateway' => $gateway,
+            ];
+            return ResponseHelper::generate(true,'Network configured successfully', $successResponse);
+        }
+        return ResponseHelper::generate(false,'Network configure fail!', $response['data']);
     }
+
+    public function fetchAvailableIPs($node)
+    {
+//        $params = ['type' => 'bridge'];
+        $response = $this->makeRequest('GET', "nodes/{$node}/network");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Network list fail!', $response['data']);
+        }
+        return ResponseHelper::generate(true,'Network list', $response['data']);
+    }
+
 
     public function applyCloudInitVM($node, $vmid)
     {
