@@ -707,10 +707,9 @@ class ProxmoxNodeVm extends Proxmox
      * @param string $node Node name
      * @param int $templateId Template VMID to clone from
      * @param array $params Clone configuration parameters
-     * @return array
      * @throws Exception
      */
-    public function cloneVM(string $node, int $templateId, array $params): array
+    public function cloneVM(string $node, int $templateId, array $params)
     {
         if (!isset($params['newid'])) {
             $params['newid'] = $this->getNextVMID();
@@ -719,16 +718,27 @@ class ProxmoxNodeVm extends Proxmox
         // Set default values
         $defaults = [
             'full' => 1,  // Full clone (not linked)
-            'name' => 'vm-' . $params['newid']
         ];
 
         $params = array_merge($defaults, $params);
 
-        return $this->makeRequest(
+        $response = $this->makeRequest(
             'POST',
             "nodes/{$node}/qemu/{$templateId}/clone",
             $params
         );
+
+        if (!isset($response['data'])) {
+            return ResponseHelper::generate(false, 'Failed to create VM!');
+        }
+
+        $successResponse = [
+            'node' => $node,
+            'vmid' => $params['newid'],
+            'data' => $response['data']
+        ];
+
+        return ResponseHelper::generate(true, 'VM Created successfully', $successResponse);
     }
 
     /**
@@ -1044,10 +1054,9 @@ class ProxmoxNodeVm extends Proxmox
                 'node' => $node,
                 'vmid' => $vmid,
             ];
-            return response()->json(['success' => true, 'data' => $successResponse, 'message' => "VM Deleted successfully"]);
+            return ResponseHelper::generate(true, 'VM Deleted successfully', $successResponse);
         } catch (Exception $e) {
-//            throw new Exception();
-            return response()->json(['success' => false, 'message' => "Failed to delete VM {$vmid}: " . $e->getMessage()]);
+            return ResponseHelper::generate(false, "Failed to delete VM {$vmid}: " . $e->getMessage());
         }
     }
 
