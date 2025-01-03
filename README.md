@@ -1,4 +1,10 @@
 ## Proxmox API Integration PHP Package
+
+[![License](https://poser.pugx.org/irabbi360/laravel-php-proxmox/license)](https://packagist.org/packages/irabbi360/laravel-php-proxmox)
+[![Latest Stable Version](https://poser.pugx.org/irabbi360/laravel-php-proxmox/version)](https://packagist.org/packages/irabbi360/laravel-php-proxmox)
+[![Total Downloads](https://poser.pugx.org/irabbi360/laravel-php-proxmox/downloads)](https://packagist.org/packages/irabbi360/laravel-php-proxmox)
+[![Daily Downloads](https://poser.pugx.org/irabbi360/laravel-php-proxmox/d/daily)](https://packagist.org/packages/irabbi360/laravel-php-proxmox)
+
 This PHP Laravel Proxmox library allows, to interact with your Proxmox server via API.
 
 > You find any errors, typos or you detect that something is not working as expected please open an [issue](https://github.com/irabbi360/laravel-php-proxmox/issues/new). I'll try to release a fix asap.
