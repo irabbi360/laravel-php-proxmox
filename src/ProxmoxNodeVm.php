@@ -145,6 +145,21 @@ class ProxmoxNodeVm extends Proxmox
         return ResponseHelper::generate(true,'storage created!', $response['data']);
     }
 
+    public function checkTaskStatus(string $node, string $upid)
+    {
+        $status = $this->makeRequest('GET', "nodes/{$node}/tasks/{$upid}/status");
+
+        if ($status['data']['status'] === 'stopped') {
+            if ($status['data']['exitstatus'] === 'OK') {
+                return $status; // Task completed successfully
+            } else {
+                return $status;
+                throw new Exception("Task failed with exit status: " . $status['data']['exitstatus']);
+            }
+        }
+        return $status;
+    }
+
     public function waitForTaskCompletion(string $node, string $upid)
     {
         do {
@@ -1110,6 +1125,30 @@ class ProxmoxNodeVm extends Proxmox
             'success' => $results,
             'errors' => $errors
         ];
+    }
+
+    public function updateCredential($node, $vmid, $payload)
+    {
+        $params = [
+            'cipassword' => $payload['password']
+        ];
+
+        try {
+            $response = $this->makeRequest('POST', "/nodes/{$node}/qemu/{$vmid}/config", $params);
+            $successResponse = [
+                'data' => $response['data'],
+                'node' => $node,
+                'vmid' => $vmid,
+            ];
+
+            if (!isset($response['data'])){
+                return ResponseHelper::generate(false,'Failed to Update VM Credential Password!');
+            }
+
+            return ResponseHelper::generate(true, 'VM Credential Password Updated successfully', $successResponse);
+        } catch (\Exception $e){
+            return ResponseHelper::generate(false, "Failed to Update VM Credential Password {$vmid}: " . $e->getMessage());
+        }
     }
 
     public function injectSSHCredentials($node, $vmid, $username, $password, $sshKey = null)

@@ -67,7 +67,6 @@ public function storage()
 }
 ```
 
-
 ```bash
 public function createVm($node, Request $request)
 {
