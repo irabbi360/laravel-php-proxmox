@@ -2,6 +2,8 @@
 
 namespace Irabbi360\Proxmox;
 
+use Irabbi360\Proxmox\Helpers\ResponseHelper;
+
 class ProxmoxStorage extends Proxmox
 {
     /**
@@ -11,7 +13,12 @@ class ProxmoxStorage extends Proxmox
     public function storage($type = null): array
     {
         $params['type'] = !empty($type) ? $type : null;
-        return $this->makeRequest('GET','storage', $params);
+        $response = $this->makeRequest('GET','storage', $params);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Storage list fetch fail!');
+        }
+        return ResponseHelper::generate(true,'Storage list!', $response['data']);
     }
 
     /**
@@ -31,7 +38,12 @@ class ProxmoxStorage extends Proxmox
             }
         }
 
-        return $this->makeRequest('POST', 'storage', $params);
+        $response = $this->makeRequest('POST', 'storage', $params);
+
+        if (!isset($response['data'])){
+            return ['success' => false, 'message' => 'Storage create fail.'];
+        }
+        return ['success' => true, 'data' => $response['data'], 'message' => 'Storage created successfully.'];
     }
 
     /**
@@ -153,7 +165,12 @@ class ProxmoxStorage extends Proxmox
      */
     public function getStorageList(): array
     {
-        return $this->makeRequest('GET', 'storage');
+        $response = $this->makeRequest('GET', 'storage');
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Storage list fetch fail!');
+        }
+        return ResponseHelper::generate(true,'Storage list!', $response['data']);
     }
 
     /**
@@ -165,7 +182,12 @@ class ProxmoxStorage extends Proxmox
      */
     public function getStorageDetails(string $storage): array
     {
-        return $this->makeRequest('GET', "storage/{$storage}");
+        $response = $this->makeRequest('GET', "storage/{$storage}");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Storage details fetch fail!');
+        }
+        return ResponseHelper::generate(true,'Storage details fetch successfully!', $response['data']);
     }
 
     /**
@@ -177,7 +199,12 @@ class ProxmoxStorage extends Proxmox
      */
     public function deleteStorage(string $storage): array
     {
-        return $this->makeRequest('DELETE', "storage/{$storage}");
+        $response = $this->makeRequest('DELETE', "storage/{$storage}");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(true,'Storage deleted successfully', $response['data']);
+        }
+        return ResponseHelper::generate(false,'Storage delete fail!', $response['data']);
     }
 
     /**
@@ -190,6 +217,11 @@ class ProxmoxStorage extends Proxmox
      */
     public function updateStorage(string $storage, array $params): array
     {
-        return $this->makeRequest('PUT', "storage/{$storage}", $params);
+        $response = $this->makeRequest('PUT', "storage/{$storage}", $params);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Storage update fail!');
+        }
+        return ResponseHelper::generate(true,'Storage updated successfully!', $response['data']);
     }
 }

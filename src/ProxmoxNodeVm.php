@@ -15,7 +15,12 @@ class ProxmoxNodeVm extends Proxmox
      */
     public function version(): array
     {
-        return $this->makeRequest('GET', 'version');
+        $response = $this->makeRequest('GET', 'version');
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'version fetch fail!');
+        }
+        return ResponseHelper::generate(true,'version!', $response['data']);
     }
 
     /**
@@ -26,7 +31,12 @@ class ProxmoxNodeVm extends Proxmox
      */
     public function getNodes(): array
     {
-        return $this->makeRequest('GET', 'nodes');
+        $response = $this->makeRequest('GET', 'nodes');
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'nodes fetch fail!');
+        }
+        return ResponseHelper::generate(true,'nodes list!', $response['data']);
     }
 
     /**
@@ -38,7 +48,12 @@ class ProxmoxNodeVm extends Proxmox
      */
     public function getVMs(string $node): array
     {
-        return $this->makeRequest('GET', "nodes/{$node}/qemu");
+        $response = $this->makeRequest('GET', "nodes/{$node}/qemu");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'node vms fail!');
+        }
+        return ResponseHelper::generate(true,'node vm list!', $response['data']);
     }
 
     /**
@@ -122,7 +137,12 @@ class ProxmoxNodeVm extends Proxmox
             }
         }
 
-        return $this->makeRequest('POST', 'storage', $params);
+        $response = $this->makeRequest('POST', 'storage', $params);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'storage create fail!');
+        }
+        return ResponseHelper::generate(true,'storage created!', $response['data']);
     }
 
     public function waitForTaskCompletion(string $node, string $upid)
@@ -154,7 +174,12 @@ class ProxmoxNodeVm extends Proxmox
      */
     public function getVMStatus(string $node, int $vmid): array
     {
-        return $this->makeRequest('GET', "nodes/{$node}/qemu/{$vmid}/status/current");
+        $response = $this->makeRequest('GET', "nodes/{$node}/qemu/{$vmid}/status/current");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'VM status check fail!');
+        }
+        return ResponseHelper::generate(true,'VM status!', $response['data']);
     }
 
     /**
@@ -407,6 +432,7 @@ class ProxmoxNodeVm extends Proxmox
                 'message' => "Failed to rename VM.",
                 'data' => $result['data'] ?? null
             ];
+
         } catch (Exception $e) {
             return [
                 'success' => false,
@@ -681,10 +707,9 @@ class ProxmoxNodeVm extends Proxmox
      * @param string $node Node name
      * @param int $templateId Template VMID to clone from
      * @param array $params Clone configuration parameters
-     * @return array
      * @throws Exception
      */
-    public function cloneVM(string $node, int $templateId, array $params): array
+    public function cloneVM(string $node, int $templateId, array $params)
     {
         if (!isset($params['newid'])) {
             $params['newid'] = $this->getNextVMID();
@@ -693,16 +718,27 @@ class ProxmoxNodeVm extends Proxmox
         // Set default values
         $defaults = [
             'full' => 1,  // Full clone (not linked)
-            'name' => 'vm-' . $params['newid']
         ];
 
         $params = array_merge($defaults, $params);
 
-        return $this->makeRequest(
+        $response = $this->makeRequest(
             'POST',
             "nodes/{$node}/qemu/{$templateId}/clone",
             $params
         );
+
+        if (!isset($response['data'])) {
+            return ResponseHelper::generate(false, 'Failed to create VM!');
+        }
+
+        $successResponse = [
+            'node' => $node,
+            'vmid' => $params['newid'],
+            'data' => $response['data']
+        ];
+
+        return ResponseHelper::generate(true, 'VM Created successfully', $successResponse);
     }
 
     /**
@@ -948,12 +984,36 @@ class ProxmoxNodeVm extends Proxmox
 
     public function configureVMCloudInitNetwork(string $node, int $vmid, $ip, $gateway, $netmask)
     {
-        $payload = [
-            "ipconfig0" => "{$ip}/{$netmask},gw={$gateway}"
+        $params = [
+            "ipconfig0" => "ip={$ip}/{$netmask},gw={$gateway}"
         ];
 
-        return $this->makeRequest('PUT', "nodes/{$node}/qemu/{$vmid}/config", $payload);
+        $response = $this->makeRequest('PUT', "nodes/{$node}/qemu/{$vmid}/config", $params);
+
+        if (!isset($response['data'])){
+            $successResponse = [
+                'node' => $node,
+                'vmid' => $vmid,
+                'public_ip' => $ip,
+                'netmask' => $netmask,
+                'gateway' => $gateway,
+            ];
+            return ResponseHelper::generate(true,'Network configured successfully', $successResponse);
+        }
+        return ResponseHelper::generate(false,'Network configure fail!', $response['data']);
     }
+
+    public function fetchAvailableIPs($node)
+    {
+//        $params = ['type' => 'bridge'];
+        $response = $this->makeRequest('GET', "nodes/{$node}/network");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Network list fail!', $response['data']);
+        }
+        return ResponseHelper::generate(true,'Network list', $response['data']);
+    }
+
 
     public function applyCloudInitVM($node, $vmid)
     {
@@ -1018,10 +1078,9 @@ class ProxmoxNodeVm extends Proxmox
                 'node' => $node,
                 'vmid' => $vmid,
             ];
-            return response()->json(['success' => true, 'data' => $successResponse, 'message' => "VM Deleted successfully"]);
+            return ResponseHelper::generate(true, 'VM Deleted successfully', $successResponse);
         } catch (Exception $e) {
-//            throw new Exception();
-            return response()->json(['success' => false, 'message' => "Failed to delete VM {$vmid}: " . $e->getMessage()]);
+            return ResponseHelper::generate(false, "Failed to delete VM {$vmid}: " . $e->getMessage());
         }
     }
 
