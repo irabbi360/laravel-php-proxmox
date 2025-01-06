@@ -18,6 +18,7 @@ class ProxmoxServiceProvider extends ServiceProvider
             'proxmox-node' => ProxmoxNodeVm::class,
             'proxmox-cluster' => ProxmoxCluster::class,
             'proxmox-storage' => ProxmoxStorage::class,
+            'proxmox-pools' => ProxmoxPools::class,
         ];
 
         foreach ($services as $alias => $class) {

@@ -2,8 +2,6 @@
 
 namespace Irabbi360\Proxmox;
 
-use Irabbi360\Proxmox\Proxmox;
-
 class ProxmoxCluster extends Proxmox
 {
     /**

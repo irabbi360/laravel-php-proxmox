@@ -8,9 +8,9 @@ class ProxmoxStorage extends Proxmox
 {
     /**
      * Storage index.
-     * @param enum     $type   Only list storage of specific type
+     * @param enum $type Only list storage of specific type
      */
-    public function storage($type = null): array
+    public function storage($type = null)
     {
         $params['type'] = !empty($type) ? $type : null;
         $response = $this->makeRequest('GET','storage', $params);
@@ -23,12 +23,10 @@ class ProxmoxStorage extends Proxmox
 
     /**
      * Create Storage
-     *
      * @param array $params Storage configuration parameters
-     * @return array
      * @throws \Exception
      */
-    public function createStorage(array $params): array
+    public function createStorage(array $params)
     {
         // Validate required parameters
         $required = ['storage', 'type'];
@@ -41,9 +39,9 @@ class ProxmoxStorage extends Proxmox
         $response = $this->makeRequest('POST', 'storage', $params);
 
         if (!isset($response['data'])){
-            return ['success' => false, 'message' => 'Storage create fail.'];
+            ResponseHelper::generate(false,'Storage create fail.');
         }
-        return ['success' => true, 'data' => $response['data'], 'message' => 'Storage created successfully.'];
+        return ResponseHelper::generate(true,'Storage created successfully.', $response['data']);
     }
 
     /**
@@ -52,9 +50,9 @@ class ProxmoxStorage extends Proxmox
      * @param string $name Storage name
      * @param string $path Directory path
      * @param array $options Additional options
-     * @return array
+     * @throws \Exception
      */
-    public function createDirectoryStorage(string $name, string $path, array $options = []): array
+    public function createDirectoryStorage(string $name, string $path, array $options = [])
     {
         // Create Directory Storage
         /*$params = [
@@ -84,9 +82,9 @@ class ProxmoxStorage extends Proxmox
      * @param string $server NFS server
      * @param string $export NFS export path
      * @param array $options Additional options
-     * @return array
+     * @throws \Exception
      */
-    public function createNFSStorage(string $name, string $server, string $export, array $options = []): array
+    public function createNFSStorage(string $name, string $server, string $export, array $options = [])
     {
         $defaults = [
             'storage' => $name,
@@ -107,9 +105,9 @@ class ProxmoxStorage extends Proxmox
      * @param string $name Storage name
      * @param string $vgname Volume group name
      * @param array $options Additional options
-     * @return array
+     * @throws \Exception
      */
-    public function createLVMStorage(string $name, string $vgname, array $options = []): array
+    public function createLVMStorage(string $name, string $vgname, array $options = [])
     {
         $defaults = [
             'storage' => $name,
@@ -159,11 +157,9 @@ class ProxmoxStorage extends Proxmox
 
     /**
      * Get Storage List
-     *
-     * @return array
      * @throws \Exception
      */
-    public function getStorageList(): array
+    public function getStorageList()
     {
         $response = $this->makeRequest('GET', 'storage');
 
@@ -177,10 +173,9 @@ class ProxmoxStorage extends Proxmox
      * Get Storage Details
      *
      * @param string $storage Storage name
-     * @return array
      * @throws \Exception
      */
-    public function getStorageDetails(string $storage): array
+    public function getStorageDetails(string $storage)
     {
         $response = $this->makeRequest('GET', "storage/{$storage}");
 
@@ -194,10 +189,9 @@ class ProxmoxStorage extends Proxmox
      * Delete Storage
      *
      * @param string $storage Storage name
-     * @return array
      * @throws \Exception
      */
-    public function deleteStorage(string $storage): array
+    public function deleteStorage(string $storage)
     {
         $response = $this->makeRequest('DELETE', "storage/{$storage}");
 
