@@ -38,7 +38,7 @@ class ProxmoxPools extends Proxmox
      * Read system log
      * @param string   $poolid
      */
-    public function PutPool($poolid, $data = array())
+    public function putPool($poolid, $data = array())
     {
         $response = $this->makeRequest('PUT', "pools/$poolid");
 
