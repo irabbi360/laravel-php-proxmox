@@ -422,11 +422,7 @@ class ProxmoxNodeVm extends Proxmox
 
             // Check if VM is running
             if ($vmStatus['data']['status'] === 'running') {
-                return [
-                    'success' => false,
-                    'message' => "Cannot rename running VM. Please stop the VM first.",
-                    'data' => null
-                ];
+                return ResponseHelper::generate(false, 'Cannot rename running VM. Please stop the VM first.');
             }
 
             // Set new name
@@ -434,26 +430,14 @@ class ProxmoxNodeVm extends Proxmox
                 'name' => $newName
             ]);
 
-            if (isset($result['success']) && $result['success']) {
-                return [
-                    'success' => true,
-                    'message' => "VM renamed successfully.",
-                    'data' => $result['data'] ?? null
-                ];
+            if (isset($result['data']) && $result['data']) {
+                return ResponseHelper::generate(true, 'VM renamed successfully.');
             }
 
-            return [
-                'success' => false,
-                'message' => "Failed to rename VM.",
-                'data' => $result['data'] ?? null
-            ];
+            return ResponseHelper::generate(false, 'Failed to rename VM.', $result['data'] ?? null);
 
         } catch (Exception $e) {
-            return [
-                'success' => false,
-                'message' => $e->getMessage(),
-                'data' => null
-            ];
+            return ResponseHelper::generate(false, $e->getMessage());
         }
     }
 
