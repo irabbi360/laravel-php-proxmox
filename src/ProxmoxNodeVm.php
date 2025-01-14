@@ -40,6 +40,1810 @@ class ProxmoxNodeVm extends Proxmox
     }
 
     /**
+     * Directory index for apt (Advanced Package Tool).
+     * @param string $node The cluster node name.
+     * @throws Exception
+     */
+    public function apt(string $node)
+    {
+        $response = $this->makeRequest("GET", "nodes/$node/apt");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'node apt fail!');
+        }
+
+        return ResponseHelper::generate(true,'node apt', $response['data']);
+    }
+
+    /**
+     * Directory index for apt (Advanced Package Tool).
+     * @param string $node The cluster node name.
+     * @param array $data
+     * @return array
+     * @throws Exception
+     */
+    public function updateApt(string $node, array $data)
+    {
+        $response = $this->makeRequest("POST", "nodes/$node/apt/update", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'apt update fail!');
+        }
+
+        return ResponseHelper::generate(true,'Apt updated', $response['data']);
+    }
+
+    /**
+     * Get package changelogs.
+     * @param string $node The cluster node name.
+     * @param string|null $name Package name.
+     * @throws Exception
+     */
+    public function aptChangelog(string $node, string $name = null)
+    {
+        $optional['name'] = !empty($name) ? $name : null;
+        $response = $this->makeRequest("GET", "nodes/$node/apt/changelog", $optional);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Apt changelog fail!');
+        }
+
+        return ResponseHelper::generate(true,'Apt changelog', $response['data']);
+    }
+
+    /**
+     * List available updates.
+     * @param string $node The cluster node name.
+     * @throws Exception
+     */
+    public function aptUpdate(string $node)
+    {
+        $response = $this->makeRequest("GET", "nodes/$node/apt/update");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'List available updates fail!');
+        }
+
+        return ResponseHelper::generate(true,'List available updates', $response['data']);
+    }
+
+    /**
+     * This is used to resynchronize the package index files from their sources (apt-get update).
+     * POST /api2/json/nodes/{node}/apt/update
+     * @param string $node The cluster node name.
+     * @param array $data
+     * @return array
+     * @throws Exception
+     */
+    public function createAptUpdate(string $node, array $data)
+    {
+        $response = $this->makeRequest("POST", "nodes/$node/apt/update", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Create update fail!');
+        }
+
+        return ResponseHelper::generate(true,'Create updates', $response['data']);
+    }
+
+    /**
+     * Directory index.
+     * GET /api2/json/nodes/{node}/ceph
+     * @param string $node The cluster node name.
+     * @throws Exception
+     */
+    public function ceph(string $node)
+    {
+        $response = $this->makeRequest("GET", "nodes/$node/ceph");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'ceph fail!');
+        }
+
+        return ResponseHelper::generate(true,'ceph list', $response['data']);
+    }
+
+    /**
+     * get all set ceph flags
+     * GET /api2/json/nodes/{node}/ceph/flags
+     * @param string $node The cluster node name.
+     * @throws Exception
+     */
+    public function cephFlags(string $node)
+    {
+        $response = $this->makeRequest("GET", "nodes/$node/ceph/flags");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'get all set ceph flags fail!');
+        }
+
+        return ResponseHelper::generate(true,'get all set ceph flags', $response['data']);
+    }
+
+    /**
+     * Set a ceph flag
+     * POST /api2/json/nodes/{node}/ceph/flags/{flag}
+     * @param string $node The cluster node name.
+     * @param enum $flag The ceph flag to set/unset
+     * @param array $data
+     * @return array
+     * @throws Exception
+     */
+    public function setCephFlags(string $node, $flag, array $data)
+    {
+        $response = $this->makeRequest("POST", "nodes/$node/ceph/flags/$flag", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Set a ceph flag fail!');
+        }
+
+        return ResponseHelper::generate(true,'Set a ceph flag', $response['data']);
+    }
+
+    /**
+     * Unset a ceph flag
+     * DELETE /api2/json/nodes/{node}/ceph/flags/{flag}
+     * @param string $node The cluster node name.
+     * @param enum $flag The ceph flag to set/unset
+     * @throws Exception
+     */
+    public function unsetCephFlags(string $node, $flag)
+    {
+        $response = $this->makeRequest("DELETE", "nodes/$node/ceph/flags/$flag");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Unset ceph flag fail!');
+        }
+
+        return ResponseHelper::generate(true,'Unset ceph flag', $response['data']);
+    }
+
+    /**
+     * Create Ceph Manager
+     * POST /api2/json/nodes/{node}/ceph/mgr
+     * @param string $node The cluster node name.
+     * @param array $data
+     * @return array
+     * @throws Exception
+     */
+    public function createCephMgr(string $node, array $data)
+    {
+        $response = $this->makeRequest("POST", "nodes/$node/ceph/mgr", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Create Ceph Manager fail!');
+        }
+
+        return ResponseHelper::generate(true,'Created Ceph Manager', $response['data']);
+    }
+
+    /**
+     * Destroy Ceph Manager.
+     * DELETE /api2/json/nodes/{node}/ceph/mgr/{id}
+     * @param string $node The cluster node name.
+     * @param string $id The ID of the manager
+     * @throws Exception
+     */
+    public function destroyCephMgr(string $node, string $id)
+    {
+        $response = $this->makeRequest("DELETE", "nodes/$node/ceph/mgr/$id");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Create Ceph Manager fail!');
+        }
+
+        return ResponseHelper::generate(true,'Created Ceph Manager', $response['data']);
+    }
+
+    /**
+     * Get Ceph monitor list.
+     * GET /api2/json/nodes/{node}/ceph/mon
+     * @param string $node The cluster node name.
+     * @throws Exception
+     */
+    public function cephMon(string $node)
+    {
+        $response = $this->makeRequest("GET", "nodes/$node/ceph/mon");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Get Ceph monitor list fail!');
+        }
+
+        return ResponseHelper::generate(true,'Get Ceph monitor list', $response['data']);
+    }
+
+    /**
+     * Create Ceph Monitor and Manager
+     * POST /api2/json/nodes/{node}/ceph/mon
+     * @param string $node The cluster node name.
+     * @param array $data
+     * @return array
+     * @throws Exception
+     */
+    public function createCephMon(string $node, array $data)
+    {
+        $response = $this->makeRequest("POST", "nodes/$node/ceph/mon", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Create Ceph Monitor and Manager fail!');
+        }
+
+        return ResponseHelper::generate(true,'Create Ceph Monitor and Manager', $response['data']);
+    }
+
+    /**
+     * Destroy Ceph Monitor and Manager.
+     * DELETE /api2/json/nodes/{node}/ceph/mon/{monid}
+     * @param string $node The cluster node name.
+     * @param string $monid Monitor ID
+     * @throws Exception
+     */
+    public function destroyCephMon(string $node, string $monid)
+    {
+        $response = $this->makeRequest("DELETE", "nodes/$node/ceph/mgr/$monid");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Destroy Ceph Monitor and Manager fail!');
+        }
+
+        return ResponseHelper::generate(true,'Destroyed Ceph Monitor and Manager', $response['data']);
+    }
+
+    /**
+     * Get Ceph osd list/tree.
+     * GET /api2/json/nodes/{node}/ceph/osd
+     * @param string $node The cluster node name.
+     * @throws Exception
+     */
+    public function cephOsd(string $node)
+    {
+        $response = $this->makeRequest("GET","nodes/$node/ceph/osd");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Get Ceph osd list fail!');
+        }
+
+        return ResponseHelper::generate(true,'Get Ceph osd list', $response['data']);
+    }
+
+    /**
+     * Create OSD
+     * POST /api2/json/nodes/{node}/ceph/osd
+     * @param string $node The cluster node name.
+     * @param array $data
+     * @return array
+     * @throws Exception
+     */
+    public function createCephOsd(string $node, array $data)
+    {
+        $response = $this->makeRequest("POST", "nodes/$node/ceph/osd", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Create OSD fail!');
+        }
+
+        return ResponseHelper::generate(true,'Created OSD', $response['data']);
+    }
+
+    /**
+     * Destroy OSD
+     * DELETE /api2/json/nodes/{node}/ceph/osd/{osdid}
+     * @param string $node The cluster node name.
+     * @param string $osdid OSD ID
+     * @throws Exception
+     */
+    public function destroyCephOsd($node, $osdid)
+    {
+        $response = $this->makeRequest("DELETE", "nodes/$node/ceph/osd/$osdid");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Destroy OSD fail!');
+        }
+
+        return ResponseHelper::generate(true,'Destroyed OSD', $response['data']);
+    }
+
+    /**
+     * ceph osd in
+     * POST /api2/json/nodes/{node}/ceph/osd/{osdid}/in
+     * @param string $node The cluster node name.
+     * @param string $osdid OSD ID
+     * @param array $data
+     * @throws Exception
+     */
+    public function cephOsdIn(string $node, string $osdid, array $data)
+    {
+        $response = $this->makeRequest("POST","nodes/$node/ceph/osd/$osdid/in", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'ceph OSD in fail!');
+        }
+
+        return ResponseHelper::generate(true,'ceph OSD in', $response['data']);
+    }
+
+    /**
+     * ceph osd out
+     * POST /api2/json/nodes/{node}/ceph/osd/{osdid}/out
+     * @param string $node The cluster node name.
+     * @param string $osdid OSD ID
+     * @param array $data
+     * @throws Exception
+     */
+    public function cephOsdOut($node, $osdid, $data = array())
+    {
+        $response = $this->makeRequest("POST","nodes/$node/ceph/osd/$osdid/out", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'ceph OSD out fail!');
+        }
+
+        return ResponseHelper::generate(true,'ceph OSD out', $response['data']);
+    }
+
+    /**
+     * List all pools.
+     * GET /api2/json/nodes/{node}/ceph/pools
+     * @param string $node The cluster node name.
+     * @throws Exception
+     */
+    public function getCephPools(string $node)
+    {
+        $response = $this->makeRequest("GET","nodes/$node/ceph/pools");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'List all pools!');
+        }
+
+        return ResponseHelper::generate(true,'List all pools', $response['data']);
+    }
+
+    /**
+     * Create POOL
+     * POST /api2/json/nodes/{node}/ceph/pools
+     * @param string $node The cluster node name.
+     * @param array $data
+     * @return array
+     * @throws Exception
+     */
+    public function createCephPool(string $node, array $data)
+    {
+        $response = $this->makeRequest("POST","nodes/$node/ceph/pools", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Create POOL fail!');
+        }
+
+        return ResponseHelper::generate(true,'Created POOL', $response['data']);
+    }
+
+    /**
+     * Destroy POOL
+     * DELETE /api2/json/nodes/{node}/ceph/pools
+     * @param string $node The cluster node name.
+     * @throws Exception
+     */
+    public function destroyCephPool(string $node)
+    {
+        $response = $this->makeRequest("DELETE","nodes/$node/ceph/pools");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Destroy POOL fail!');
+        }
+
+        return ResponseHelper::generate(true,'Destroyed POOL', $response['data']);
+    }
+
+    /**
+     * Get Ceph configuration.
+     * GET /api2/json/nodes/{node}/ceph/config
+     * @param string $node The cluster node name.
+     * @throws Exception
+     */
+    public function cephConfig(string $node)
+    {
+        $response = $this->makeRequest("GET", "nodes/$node/ceph/config");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Get Ceph configuration fail!');
+        }
+
+        return ResponseHelper::generate(true,'Get Ceph configuration', $response['data']);
+    }
+
+    /**
+     * Get OSD crush map
+     * GET /api2/json/nodes/{node}/ceph/crush
+     * @param string $node The cluster node name.
+     * @throws Exception
+     */
+    public function cephCrush(string $node)
+    {
+        $response = $this->makeRequest("GET","nodes/$node/ceph/crush");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Get OSD crush map fail!');
+        }
+
+        return ResponseHelper::generate(true,'Get OSD crush map', $response['data']);
+    }
+
+    /**
+     * List local disks.
+     * GET /api2/json/nodes/{node}/ceph/disks
+     * @param string $node The cluster node name.
+     * @throws Exception
+     */
+    public function cephDisks(string $node)
+    {
+        $response = $this->makeRequest("GET","nodes/$node/ceph/disks");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'List local disks fail!');
+        }
+
+        return ResponseHelper::generate(true,'List local disks', $response['data']);
+    }
+
+    /**
+     * Create initial ceph default configuration and setup symlinks.
+     * POST /api2/json/nodes/{node}/ceph/init
+     * @param string $node The cluster node name.
+     * @param array $data
+     * @return array
+     * @throws Exception
+     */
+    public function createCephInit(string $node, array $data)
+    {
+        $response = $this->makeRequest("POST","nodes/$node/ceph/init", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Create initial ceph fail!');
+        }
+
+        return ResponseHelper::generate(true,'Create initial ceph', $response['data']);
+    }
+
+    /**
+     * Read ceph log
+     * GET /api2/json/nodes/{node}/ceph/log
+     * @param string $node The cluster node name.
+     * @param integer|null $limit
+     * @param integer|null $start
+     * @throws Exception
+     */
+    public function cephLog(string $node, int $limit = null, int $start = null)
+    {
+        $optional['limit'] = !empty($limit) ? $limit : 50;
+        $optional['start'] = !empty($start) ? $start : 0;
+
+        $response = $this->makeRequest("GET","nodes/$node/ceph/log", $optional);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Read ceph log fail!');
+        }
+
+        return ResponseHelper::generate(true,'Read ceph log', $response['data']);
+    }
+
+    /**
+     * List ceph rules.
+     * GET /api2/json/nodes/{node}/ceph/rules
+     * @param string $node The cluster node name.
+     * @throws Exception
+     */
+    public function cephRules(string $node)
+    {
+        $response = $this->makeRequest("GET", "nodes/$node/ceph/rules");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'List ceph rules fail!');
+        }
+
+        return ResponseHelper::generate(true,'List ceph rules', $response['data']);
+    }
+
+    /**
+     * Start ceph services.
+     * POST /api2/json/nodes/{node}/ceph/start
+     * @param string $node The cluster node name.
+     * @param array $data
+     * @return array
+     * @throws Exception
+     */
+    public function cephStart(string $node, array $data)
+    {
+        $response = $this->makeRequest("POST","nodes/$node/ceph/start", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Start ceph services fail!');
+        }
+
+        return ResponseHelper::generate(true,'Start ceph services', $response['data']);
+    }
+
+    /**
+     * Stop ceph services.
+     * POST /api2/json/nodes/{node}/ceph/stop
+     * @param string $node The cluster node name.
+     * @param array $data
+     * @return array
+     * @throws Exception
+     */
+    public function cephStop(string $node, array $data)
+    {
+        $response = $this->makeRequest("POST","nodes/$node/ceph/stop", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Stop ceph services fail!');
+        }
+
+        return ResponseHelper::generate(true,'Stop ceph services', $response['data']);
+    }
+
+    /**
+     * Get ceph status.
+     * GET /api2/json/nodes/{node}/ceph/status
+     * @param string $node The cluster node name.
+     * @throws Exception
+     */
+    public function cephStatus(string $node)
+    {
+        $response = $this->makeRequest("GET","nodes/$node/ceph/status");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Get ceph status fail!');
+        }
+
+        return ResponseHelper::generate(true,'Get ceph status', $response['data']);
+    }
+
+    /**
+     * Node index.
+     * GET /api2/json/nodes/{node}/disks
+     * @param string $node The cluster node name.
+     * @throws Exception
+     */
+    public function getDisks(string $node)
+    {
+        $response = $this->makeRequest("GET","nodes/$node/disks");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Disk list fail!');
+        }
+
+        return ResponseHelper::generate(true,'Disk list', $response['data']);
+    }
+
+    /**
+     * Initialize Disk with GPT
+     * POST /api2/json/nodes/{node}/disks
+     * @param string $node The cluster node name.
+     * @param array $data
+     * @return array
+     * @throws Exception
+     */
+    public function disk(string $node, array $data)
+    {
+        $response = $this->makeRequest("POST","nodes/$node/disks", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Initialize Disk with GPT fail!');
+        }
+
+        return ResponseHelper::generate(true,'Initialize Disk with GPT', $response['data']);
+    }
+
+    /**
+     * List local disks.
+     * GET /api2/json/nodes/{node}/disks/list
+     * @param string $node The cluster node name.
+     * @throws Exception
+     */
+    public function disksList(string $node)
+    {
+        $response = $this->makeRequest("GET","nodes/$node/disks/list");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'List local disks fail!');
+        }
+
+        return ResponseHelper::generate(true,'List local disks', $response['data']);
+    }
+
+    /**
+     * Get SMART Health of a disk.
+     * GET /api2/json/nodes/{node}/disks/smart
+     * @param string $node The cluster node name.
+     * @param string|null $disk Block device name
+     * @throws Exception
+     */
+    public function disksSmart(string $node, string $disk = null)
+    {
+        $optional['disk'] = !empty($disk) ? $disk : null;
+
+        $response = $this->makeRequest("GET", "nodes/$node/disks/smart", $optional);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Get SMART Health of a disk fail!');
+        }
+
+        return ResponseHelper::generate(true,'Get SMART Health of a disk', $response['data']);
+    }
+
+    /**
+     * Directory index.
+     * GET /api2/json/nodes/{node}/firewall
+     * @param string $node The cluster node name.
+     * @throws Exception
+     */
+    public function firewall(string $node)
+    {
+        $response = $this->makeRequest("GET","nodes/$node/firewall");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Firewall list fail!');
+        }
+
+        return ResponseHelper::generate(true,'Firewall list', $response['data']);
+    }
+
+    /**
+     * List rules.
+     * GET /api2/json/nodes/{node}/firewall/rules
+     * @param string $node The cluster node name.
+     * @throws Exception
+     */
+    public function firewallRules(string $node)
+    {
+        $response = $this->makeRequest("GET","nodes/$node/firewall/rules");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Firewall list rules fail!');
+        }
+
+        return ResponseHelper::generate(true,'Firewall list rules', $response['data']);
+    }
+
+    /**
+     * Create new rule
+     * POST /api2/json/nodes/{node}/firewall/rules
+     * @param string $node The cluster node name.
+     * @param array $data
+     * @throws Exception
+     */
+    public function createFirewallRule($node, $data = array())
+    {
+        $response = $this->makeRequest( "POST","nodes/$node/firewall/rules", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Create new rule fail!');
+        }
+
+        return ResponseHelper::generate(true,'Created new rule', $response['data']);
+    }
+
+    /**
+     * Get single rule data.
+     * GET /api2/json/nodes/{node}/firewall/rules/{pos}
+     * @param string $node The cluster node name.
+     * @param integer $pos Update rule at position <pos>.
+     * @throws Exception
+     */
+    public function firewallRulesPos(string $node, int $pos)
+    {
+        $response = $this->makeRequest( "GET","nodes/$node/firewall/rules/$pos");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Get single rule data fail!');
+        }
+
+        return ResponseHelper::generate(true,'Get single rule data', $response['data']);
+    }
+
+    /**
+     * Modify rule data.
+     * PUT /api2/json/nodes/{node}/firewall/rules/{pos}
+     * @param string $node The cluster node name.
+     * @param integer $pos Update rule at position <pos>.
+     * @param array $data
+     * @throws Exception
+     */
+    public function setFirewallRulePos(string $node, int $pos, array $data)
+    {
+        $response = $this->makeRequest( "PUT","nodes/$node/firewall/rules/$pos", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Modify rule data fail!');
+        }
+
+        return ResponseHelper::generate(true,'Modify rule data', $response['data']);
+    }
+
+    /**
+     * Delete rule.
+     * DELETE /api2/json/nodes/{node}/firewall/rules/{pos}
+     * @param string $node The cluster node name.
+     * @param integer $pos Update rule at position <pos>.
+     * @throws Exception
+     */
+    public function deleteFirewallRulePos(string $node, int $pos)
+    {
+        $response = $this->makeRequest("DELETE","nodes/$node/firewall/rules/$pos");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Delete rule fail!');
+        }
+
+        return ResponseHelper::generate(true,'Delete rule', $response['data']);
+    }
+
+    /**
+     * Read firewall log
+     * GET /api2/json/nodes/{node}/firewall/rules/log
+     * @param string $node The cluster node name.
+     * @throws Exception
+     */
+    public function firewallRulesLog(string $node)
+    {
+        $response = $this->makeRequest("GET","nodes/$node/firewall/rules/log");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Read firewall log fail!');
+        }
+
+        return ResponseHelper::generate(true,'Read firewall log', $response['data']);
+    }
+
+    /**
+     * Get host firewall options.
+     * GET /api2/json/nodes/{node}/firewall/rules/options
+     * @param string $node The cluster node name.
+     * @throws Exception
+     */
+    public function firewallRulesOptions(string $node)
+    {
+        $response = $this->makeRequest("GET","nodes/$node/firewall/rules/options");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Get host firewall options fail!');
+        }
+
+        return ResponseHelper::generate(true,'Get host firewall options', $response['data']);
+    }
+
+    /**
+     * Set Firewall options.
+     * PUT /api2/json/nodes/{node}/firewall/rules/options
+     * @param string $node The cluster node name.
+     * @param array $data
+     * @return array
+     * @throws Exception
+     */
+    public function setFirewallRuleOptions(string $node, array $data)
+    {
+        $response = $this->makeRequest("PUT","cluster/firewall/options", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Set firewall options fail!');
+        }
+
+        return ResponseHelper::generate(true,'Set firewall options', $response['data']);
+    }
+
+    /**
+     * LXC container index (per node).
+     * GET /api2/json/nodes/{node}/lxc
+     * @param string $node The cluster node name.
+     * @throws Exception
+     */
+    public function lxc(string $node)
+    {
+        $response = $this->makeRequest("GET","nodes/$node/lxc");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'LXC container fail!');
+        }
+
+        return ResponseHelper::generate(true,'LXC containers', $response['data']);
+    }
+
+    /**
+     * Create or restore a container.
+     * POST /api2/json/nodes/{node}/lxc
+     * @param string $node The cluster node name.
+     * @param array $data
+     * @throws Exception
+     */
+    public function createLxc(string $node, array $data)
+    {
+        $response = $this->makeRequest("POST","nodes/$node/lxc", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Create or restore a container fail!');
+        }
+
+        return ResponseHelper::generate(true,'Created or restored a container', $response['data']);
+    }
+
+    /**
+     * Directory index
+     * GET /api2/json/nodes/{node}/lxc/{vmid}
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @throws Exception
+     */
+    public function lxcVmid(string $node, int $vmid)
+    {
+        $response = $this->makeRequest("GET","nodes/$node/lxc/$vmid");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Lxc list fail!');
+        }
+
+        return ResponseHelper::generate(true,'Lxc list', $response['data']);
+    }
+
+    /**
+     * Destroy the container (also delete all uses files).
+     * DELETE /api2/json/nodes/{node}/lxc/{vmid}
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @throws Exception
+     */
+    public function deleteLxc($node, $vmid)
+    {
+        $response = $this->makeRequest("DELETE","nodes/$node/lxc/$vmid");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Destroy the container fail!');
+        }
+
+        return ResponseHelper::generate(true,'Destroy the container', $response['data']);
+    }
+
+    /**
+     * Directory index.
+     * GET /api2/json/nodes/{node}/lxc/{vmid}/firewall/aliases
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @throws Exception
+     */
+    public function lxcFirewall(string $node, int $vmid)
+    {
+        $response = $this->makeRequest("GET","nodes/$node/lxc/$vmid/firewall");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Destroy the container fail!');
+        }
+
+        return ResponseHelper::generate(true,'Destroy the container', $response['data']);
+    }
+
+    /**
+     * List aliases
+     * GET /api2/json/nodes/{node}/lxc/{vmid}/firewall/aliases
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @throws Exception
+     */
+    public function lxcFirewallAliases(string $node, int $vmid)
+    {
+        $response = $this->makeRequest("GET","nodes/$node/lxc/$vmid/firewall/aliases");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'List aliases fail!');
+        }
+
+        return ResponseHelper::generate(true,'List aliases', $response['data']);
+    }
+
+    /**
+     * Create IP or Network Alias
+     * POST /api2/json/nodes/{node}/lxc/{vmid}/firewall/aliases
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @param array $data
+     * @return array
+     * @throws Exception
+     */
+    public function createLxcFirewallAliase(string $node, int $vmid, array $data)
+    {
+        $response = $this->makeRequest("POST","nodes/$node/lxc/$vmid/firewall/aliases", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Create IP or Network Alias fail!');
+        }
+
+        return ResponseHelper::generate(true,'Created IP or Network Alias', $response['data']);
+    }
+
+    /**
+     * Read alias.
+     * GET /api2/json/nodes/{node}/lxc/{vmid}/firewall/aliases/{name}
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @param string $name Alias name.
+     * @throws Exception
+     */
+    public function lxcFirewallAliasesName(string $node, int $vmid, string $name)
+    {
+        $response = $this->makeRequest("GET","nodes/$node/lxc/$vmid/firewall/aliases/$name");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Read alias fail!');
+        }
+
+        return ResponseHelper::generate(true,'Read Alias', $response['data']);
+    }
+
+    /**
+     * Update IP or Network alias
+     * PUT /api2/json/nodes/{node}/lxc/{vmid}/firewall/aliases/{name}
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @param string $name Alias name.
+     * @param array $data
+     * @throws Exception
+     */
+    public function updateLxcFirewallAliaseName(string $node, int $vmid, string $name, array $data)
+    {
+        $response = $this->makeRequest("PUT","nodes/$node/lxc/$vmid/firewall/aliases/$name", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Update IP or Network alias fail!');
+        }
+
+        return ResponseHelper::generate(true,'Updated IP or Network alias', $response['data']);
+    }
+
+    /**
+     * Remove IP or Network alias.
+     * DELETE /api2/json/nodes/{node}/lxc/{vmid}/firewall/aliases/{name}
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @param string $name Alias name.
+     * @throws Exception
+     */
+    public function deleteLxcFirewallAliaseName(string $node, int $vmid, string $name)
+    {
+        $response = $this->makeRequest("DELETE","nodes/$node/lxc/$vmid/firewall/aliases/$name");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Remove IP or Network alias fail!');
+        }
+
+        return ResponseHelper::generate(true,'Removed IP or Network alias', $response['data']);
+    }
+
+    /**
+     * List IPSets
+     * GET /api2/json/nodes/{node}/lxc/{vmid}/firewall/ipset
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @throws Exception
+     */
+    public function lxcFirewallIpset(string $node, int $vmid)
+    {
+        $response = $this->makeRequest("GET","nodes/$node/lxc/$vmid/firewall/ipset");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'List IPSets fail!');
+        }
+
+        return ResponseHelper::generate(true,'List IPSets', $response['data']);
+    }
+
+    /**
+     * Create new IPSet
+     * POST /api2/json/nodes/{node}/lxc/{vmid}/firewall/ipset
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @param array $data
+     * @throws Exception
+     */
+    public function createLxcFirewallIpset(string $node, int $vmid, array $data)
+    {
+        $response = $this->makeRequest("POST","nodes/$node/lxc/$vmid/firewall/ipset", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Create new IPSet fail!');
+        }
+
+        return ResponseHelper::generate(true,'Create new IPSet', $response['data']);
+    }
+
+    /**
+     * List IPSet content
+     * GET /api2/json/nodes/{node}/lxc/{vmid}/firewall/ipset/{name}
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @param string $name IP set name.
+     * @throws Exception
+     */
+    public function lxcFirewallIpsetName(string $node, int $vmid, string $name)
+    {
+        $response = $this->makeRequest("GET","nodes/$node/lxc/$vmid/firewall/ipset/$name");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'List IPSet content fail!');
+        }
+
+        return ResponseHelper::generate(true,'List IPSet content', $response['data']);
+    }
+
+    /**
+     * Add IP or Network to IPSet.
+     * POST /api2/json/nodes/{node}/lxc/{vmid}/firewall/ipset/{name}
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @param string $name IP set name.
+     * @param array $data
+     * @throws Exception
+     */
+    public function addLxcFirewallIpsetName(string $node, int $vmid, string $name, array $data)
+    {
+        $response = $this->makeRequest("POST","nodes/$node/lxc/$vmid/firewall/ipset/$name", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Add IP or Network to IPSet fail!');
+        }
+
+        return ResponseHelper::generate(true,'Add IP or Network to IPSet', $response['data']);
+    }
+
+    /**
+     * Delete IPSet
+     * DELETE /api2/json/nodes/{node}/lxc/{vmid}/firewall/ipset/{name}
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @param string $name IP set name.
+     * @throws Exception
+     */
+    public function deleteLxcFirewallIpsetName(string $node, int $vmid, string $name)
+    {
+        $response = $this->makeRequest("DELETE","/nodes/$node/lxc/$vmid/firewall/ipset/$name");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Delete IPSet fail!');
+        }
+
+        return ResponseHelper::generate(true,'Deleted IPSet', $response['data']);
+    }
+
+    /**
+     * Read IP or Network settings from IPSet.
+     * GET /api2/json/nodes/{node}/lxc/{vmid}/firewall/ipset/{name}/{cidr}
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @param string $name IP set name.
+     * @param string $cidr Network/IP specification in CIDR format.
+     * @throws Exception
+     */
+    public function lxcFirewallIpsetNameCidr(string $node, int $vmid, string $name, string $cidr)
+    {
+        $response = $this->makeRequest("GET","nodes/$node/lxc/$vmid/firewall/ipset/$name/$cidr");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Read IP or Network settings from IPSet fail!');
+        }
+
+        return ResponseHelper::generate(true,'Read IP or Network settings from IPSet', $response['data']);
+    }
+
+    /**
+     * Update IP or Network settings
+     * PUT /api2/json/nodes/{node}/lxc/{vmid}/firewall/ipset/{name}/{cidr}
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @param string $name IP set name.
+     * @param string $cidr Network/IP specification in CIDR format.
+     * @param array $data
+     * @throws Exception
+     */
+    public function updateLxcFirewallIpsetNameCidr(string $node, int $vmid, string $name, string $cidr, array $data)
+    {
+        $response = $this->makeRequest("PUT","nodes/$node/lxc/$vmid/firewall/ipset/$name/$cidr", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Update IP or Network settings fail!');
+        }
+
+        return ResponseHelper::generate(true,'Updated IP or Network settings', $response['data']);
+    }
+
+    /**
+     * Remove IP or Network settings
+     * DELETE /api2/json/nodes/{node}/lxc/{vmid}/firewall/ipset/{name}/{cidr}
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @param string $name IP set name.
+     * @param string $cidr Network/IP specification in CIDR format.
+     * @throws Exception
+     */
+    public function deleteLxcFirewallIpsetNameCidr(string $node, int $vmid, string $name, string $cidr)
+    {
+        $response = $this->makeRequest("DELETE","nodes/$node/lxc/$vmid/firewall/ipset/$name/$cidr");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Remove IP or Network settings fail!');
+        }
+
+        return ResponseHelper::generate(true,'Removed IP or Network settings', $response['data']);
+    }
+
+    /**
+     * List rules.
+     * GET /api2/json/nodes/{node}/lxc/{vmid}/firewall/rules
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @throws Exception
+     */
+    public function lxcFirewallRules(string $node, int $vmid)
+    {
+        $response = $this->makeRequest("GET","nodes/$node/lxc/$vmid/firewall/rules");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'List rules fail!');
+        }
+
+        return ResponseHelper::generate(true,'List rules', $response['data']);
+    }
+
+    /**
+     * Create new rule.
+     * POST /api2/json/nodes/{node}/lxc/{vmid}/firewall/rules
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @param array $data
+     * @throws Exception
+     */
+    public function createLxcFirewallRules(string $node, int $vmid, array $data)
+    {
+        $response = $this->makeRequest("POST","/nodes/$node/lxc/$vmid/firewall/rules", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Create new rule fail!');
+        }
+
+        return ResponseHelper::generate(true,'Created new rule', $response['data']);
+    }
+
+    /**
+     * Get single rule data.
+     * GET /api2/json/nodes/{node}/lxc/{vmid}/firewall/rules/{pos}
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @throws Exception
+     */
+    public function lxcFirewallRulesPos(string $node, int $vmid, $pos)
+    {
+        $response = $this->makeRequest("POST","/nodes/$node/lxc/$vmid/firewall/rules/$pos");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Get single rule data fail!');
+        }
+
+        return ResponseHelper::generate(true,'Get single rule data', $response['data']);
+    }
+
+    /**
+     * Modify rule data.
+     * PUT /api2/json/nodes/{node}/lxc/{vmid}/firewall/rules/{pos}
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @param array $data
+     * @throws Exception
+     */
+    public function setLxcFirewallRulesPos(string $node, int $vmid, $pos, array $data)
+    {
+        $response = $this->makeRequest("PUT","nodes/$node/lxc/$vmid/firewall/rules/$pos", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Modify rule data fail!');
+        }
+
+        return ResponseHelper::generate(true,'Modify rule data', $response['data']);
+    }
+
+    /**
+     * Delete rule.
+     * DELETE /api2/json/nodes/{node}/lxc/{vmid}/firewall/rules/{pos}
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @throws Exception
+     */
+    public function deleteLxcFirewallRulesPos(string $node, int $vmid, $pos)
+    {
+        $response = $this->makeRequest("DELETE","/nodes/$node/lxc/$vmid/firewall/rules/$pos");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Delete rule fail!');
+        }
+
+        return ResponseHelper::generate(true,'Deleted rule', $response['data']);
+    }
+
+    /**
+     * Read firewall log
+     * GET /api2/json/nodes/{node}/lxc/{vmid}/firewall/log
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @param integer|null $limit
+     * @param integer|null $start
+     * @throws Exception
+     */
+    public function lxcFirewallLog(string $node, int $vmid, int $limit = null, int $start = null)
+    {
+        $optional['limit'] = !empty($limit) ? $limit : 50;
+        $optional['start'] = !empty($start) ? $start : 0;
+
+        $response = $this->makeRequest("GET","nodes/$node/lxc/$vmid/firewall/log", $optional);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Read firewall log fail!');
+        }
+
+        return ResponseHelper::generate(true,'Read firewall log', $response['data']);
+    }
+
+    /**
+     * Get VM firewall options.
+     * GET /api2/json/nodes/{node}/lxc/{vmid}/firewall/options
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @throws Exception
+     */
+    public function lxcFirewallOptions(string $node, int $vmid)
+    {
+        $response = $this->makeRequest("GET","nodes/$node/lxc/$vmid/firewall/options");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Get VM firewall options fail!');
+        }
+
+        return ResponseHelper::generate(true,'Get VM firewall options', $response['data']);
+    }
+
+    /**
+     * Set Firewall options.
+     * PUT /api2/json/nodes/{node}/lxc/{vmid}/firewall/options
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @param array $data
+     * @throws Exception
+     */
+    public function setLxcFirewallOptions($node, $vmid, $data = array())
+    {
+        $response = $this->makeRequest("PUT","/nodes/$node/lxc/$vmid/firewall/options", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Set VM firewall options fail!');
+        }
+
+        return ResponseHelper::generate(true,'Set VM firewall options', $response['data']);
+    }
+
+    /**
+     * List all snapshots.
+     * GET /api2/json/nodes/{node}/lxc/{vmid}/snapshot
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @throws Exception
+     */
+    public function lxcSnapshot(string $node, int $vmid)
+    {
+        $response = $this->makeRequest("GET","nodes/$node/lxc/$vmid/snapshot");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'List all snapshots fail!');
+        }
+
+        return ResponseHelper::generate(true,'List all snapshots', $response['data']);
+    }
+
+    /**
+     * Snapshot a container.
+     * POST /api2/json/nodes/{node}/lxc/{vmid}/snapshot
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @param array $data
+     * @throws Exception
+     */
+    public function createLxcSnapshot(string $node, int $vmid, array $data)
+    {
+        $response = $this->makeRequest("POST","nodes/$node/lxc/$vmid/snapshot", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Snapshot a container fail!');
+        }
+
+        return ResponseHelper::generate(true,'Snapshot a container', $response['data']);
+    }
+
+    /**
+     * List all snapshots.
+     * GET /api2/json/nodes/{node}/lxc/{vmid}/snapshot/{snapname}
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @param string $snapname The name of the snapshot.
+     * @throws Exception
+     */
+    public function lxcSnapname(string $node, int $vmid, string $snapname)
+    {
+        $response = $this->makeRequest("GET","nodes/$node/lxc/$vmid/snapshot/$snapname");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'List all snapshots fail!');
+        }
+
+        return ResponseHelper::generate(true,'List all snapshots', $response['data']);
+    }
+
+    /**
+     * Delete a LXC snapshot.
+     * DELETE /api2/json/nodes/{node}/lxc/{vmid}/snapshot/{snapname}
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @param string $snapname The name of the snapshot.
+     * @throws Exception
+     */
+    public function deleteLxcSnapshot(string $node, int $vmid, string $snapname)
+    {
+        $response = $this->makeRequest("DELETE","nodes/$node/lxc/$vmid/snapshot/$snapname");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'List all snapshots fail!');
+        }
+
+        return ResponseHelper::generate(true,'List all snapshots', $response['data']);
+    }
+
+    /**
+     * Get snapshot configuration
+     * GET /api2/json/nodes/{node}/lxc/{vmid}/snapshot/{snapname}/config
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @param string $snapname The name of the snapshot.
+     * @throws Exception
+     */
+    public function lxcSnapnameConfig(string $node, int $vmid, string $snapname)
+    {
+        $response = $this->makeRequest("GET","/nodes/$node/lxc/$vmid/snapshot/$snapname/config");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Get snapshot configuration fail!');
+        }
+
+        return ResponseHelper::generate(true,'Get snapshot configuration', $response['data']);
+    }
+
+    /**
+     * Update snapshot metadata.
+     * PUT /api2/json/nodes/{node}/lxc/{vmid}/snapshot/{snapname}/config
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @param string $snapname The name of the snapshot.
+     * @param array $data
+     * @throws Exception
+     */
+    public function lxcSnapshotConfig(string $node, int $vmid, string $snapname, array $data)
+    {
+        $response = $this->makeRequest("PUT","/nodes/$node/lxc/$vmid/snapshot/$snapname/config", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Update snapshot metadata fail!');
+        }
+
+        return ResponseHelper::generate(true,'Update snapshot metadata', $response['data']);
+    }
+
+    /**
+     * Rollback LXC state to specified snapshot.
+     * POST /api2/json/nodes/{node}/lxc/{vmid}/snapshot/{snapname}/rollback
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @param string $snapname The name of the snapshot.
+     * @param array $data
+     * @throws Exception
+     */
+    public function lxcSnapshotRollback(string $node, int $vmid, string $snapname, array $data)
+    {
+        $response = $this->makeRequest("POST","nodes/$node/lxc/$vmid/snapshot/$snapname/rollback", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Update snapshot metadata fail!');
+        }
+
+        return ResponseHelper::generate(true,'Update snapshot metadata', $response['data']);
+    }
+
+    /**
+     * LXC Status
+     * GET /api2/json/nodes/{node}/lxc/{vmid}/status
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @throws Exception
+     */
+    public function lxcStatus(string $node, int $vmid)
+    {
+        $response = $this->makeRequest("GET","nodes/$node/lxc/$vmid/status");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'LXC status fail!');
+        }
+
+        return ResponseHelper::generate(true,'LXC status', $response['data']);
+    }
+
+    /**
+     * Get virtual machine status.
+     * GET /api2/json/nodes/{node}/lxc/{vmid}/status/current
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @throws Exception
+     */
+    public function lxcCurrent(string $node, int $vmid)
+    {
+        $response = $this->makeRequest("GET","nodes/$node/lxc/$vmid/status/current");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Get virtual machine status fail!');
+        }
+
+        return ResponseHelper::generate(true,'Get virtual machine status', $response['data']);
+    }
+
+    /**
+     * Resume the container.
+     * POST /api2/json/nodes/{node}/lxc/{vmid}/status/resume
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @param array $data
+     * @throws Exception
+     */
+    public function lxcResume(string $node, int $vmid, array $data)
+    {
+        $response = $this->makeRequest("POST","nodes/$node/lxc/$vmid/status/resume", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Resume the container fail!');
+        }
+
+        return ResponseHelper::generate(true,'Resume the container', $response['data']);
+    }
+
+    /**
+     * Shutdown the container. This will trigger a clean shutdown of the container, see lxc-stop(1) for details.
+     * POST /api2/json/nodes/{node}/lxc/{vmid}/status/shutdown
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @param array $data
+     * @throws Exception
+     */
+    public function lxcShutdown(string $node, int $vmid, array $data)
+    {
+        $response = $this->makeRequest("POST","/nodes/$node/lxc/$vmid/status/shutdown", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Shutdown the container fail!');
+        }
+
+        return ResponseHelper::generate(true,'Shutdown the container', $response['data']);
+    }
+
+    /**
+     * Start the container.
+     * POST /api2/json/nodes/{node}/lxc/{vmid}/status/start
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @param array $data
+     * @throws Exception
+     */
+    public function lxcStart(string $node, int $vmid, array $data)
+    {
+        $response = $this->makeRequest("POST","nodes/$node/lxc/$vmid/status/start", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Start the container fail!');
+        }
+
+        return ResponseHelper::generate(true,'Start the container', $response['data']);
+    }
+
+    /**
+     * Stop the container. This will abruptly stop all processes running in the container.
+     * POST /api2/json/nodes/{node}/lxc/{vmid}/status/stop
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @param array $data
+     * @throws Exception
+     */
+    public function lxcStop(string $node, int $vmid, array $data)
+    {
+        $response = $this->makeRequest("POST","nodes/$node/lxc/$vmid/status/stop", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Stop the container fail!');
+        }
+
+        return ResponseHelper::generate(true,'Stop the container', $response['data']);
+    }
+
+    /**
+     * Suspend the container.
+     * POST /api2/json/nodes/{node}/lxc/{vmid}/status/suspend
+     * @param string   $node     The cluster node name.
+     * @param integer  $vmid     The (unique) ID of the VM.
+     * @param array    $data
+     */
+    public function lxcSuspend($node, $vmid, $data = array())
+    {
+        $response = $this->makeRequest("POST","nodes/$node/lxc/$vmid/status/suspend", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Suspend the container fail!');
+        }
+
+        return ResponseHelper::generate(true,'Suspend the container', $response['data']);
+    }
+
+    /**
+     * Reboot the container.
+     * POST /api2/json/nodes/{node}/lxc/{vmid}/status/reboot
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @param array $data
+     * @throws Exception
+     */
+    public function lxcReboot(string $node, int $vmid, array $data)
+    {
+        $response = $this->makeRequest("POST","nodes/$node/lxc/$vmid/status/reboot", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Reboot the container fail!');
+        }
+
+        return ResponseHelper::generate(true,'Reboot the container', $response['data']);
+    }
+
+    /**
+     * Create a container clone/copy
+     * POST /api2/json/nodes/{node}/lxc/{vmid}/clone
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @param array $data
+     * @throws Exception
+     */
+    public function lxcClone(string $node, int $vmid, array $data)
+    {
+        $response = $this->makeRequest("POST","/nodes/$node/lxc/$vmid/clone", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Create a container clone fail!');
+        }
+
+        return ResponseHelper::generate(true,'Create a container clone', $response['data']);
+    }
+
+    /**
+     * Get container configuration.
+     * GET /api2/json/nodes/{node}/lxc/{vmid}/config
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @throws Exception
+     */
+    public function lxcConfig(string $node, int $vmid)
+    {
+        $response = $this->makeRequest("GET","nodes/$node/lxc/$vmid/config");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Get container configuration fail!');
+        }
+
+        return ResponseHelper::generate(true,'Get container configuration', $response['data']);
+    }
+
+    /**
+     * Set container options.
+     * PUT /api2/json/nodes/{node}/lxc/{vmid}/config
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @param array $data
+     * @throws Exception
+     */
+    public function setLxcConfig(string $node, int $vmid, array $data)
+    {
+        $response = $this->makeRequest("PUT","nodes/$node/lxc/$vmid/config", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Set container configuration fail!');
+        }
+
+        return ResponseHelper::generate(true,'Set container configuration', $response['data']);
+    }
+
+    /**
+     * Check if feature for virtual machine is available.
+     * GET /api2/json/nodes/{node}/lxc/{vmid}/feature
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @throws Exception
+     */
+    public function lxcFeature(string $node, int $vmid)
+    {
+        $response = $this->makeRequest("GET","nodes/$node/lxc/$vmid/feature");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Check if feature for virtual machine is available fail!');
+        }
+
+        return ResponseHelper::generate(true,'Check if feature for virtual machine is available', $response['data']);
+    }
+
+    /**
+     * Migrate the container to another node. Creates a new migration task.
+     * POST /api2/json/nodes/{node}/lxc/{vmid}/migrate
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @param array $data
+     * @throws Exception
+     */
+    public function lxcMigrate(string $node, int $vmid, array $data)
+    {
+        $response = $this->makeRequest("POST","nodes/$node/lxc/$vmid/migrate", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Migrate the container to another node. Creates a new migration task fail!');
+        }
+
+        return ResponseHelper::generate(true,'Migrate the container to another node. Creates a new migration task', $response['data']);
+    }
+
+    /**
+     * Resize a container mount point.
+     * PUT /api2/json/nodes/{node}/lxc/{vmid}/resize
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @param array $data
+     * @throws Exception
+     */
+    public function lxcResize(string $node, int $vmid, array $data)
+    {
+        $response = $this->makeRequest("PUT","/nodes/$node/lxc/$vmid/resize", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Resize a container mount point fail!');
+        }
+
+        return ResponseHelper::generate(true,'Resize a container mount point task', $response['data']);
+    }
+
+    /**
+     * Read VM RRD statistics (returns PNG)
+     * GET /api2/json/nodes/{node}/lxc/{vmid}/rrd
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @param string|null $ds The list of datasources you want to display.
+     * @param enum $timeframe Specify the time frame you are interested in.
+     * @throws Exception
+     */
+    public function lxcRrd(string $node, int $vmid, string $ds = null, $timeframe = null)
+    {
+        $optional['ds'] = !empty($ds) ? $ds : null;
+        $optional['timeframe'] = !empty($timeframe) ? $timeframe : null;
+
+        $response = $this->makeRequest("GET","nodes/$node/lxc/$vmid/rrd", $optional);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Read VM RRD statistics fail!');
+        }
+
+        return ResponseHelper::generate(true,'Read VM RRD statistics', $response['data']);
+    }
+
+    /**
+     * Read VM RRD statistics
+     * GET /api2/json/nodes/{node}/lxc/{vmid}/rrddata
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @param enum $timeframe Specify the time frame you are interested in.
+     * @throws Exception
+     */
+    public function lxcRrddata($node, $vmid, $timeframe = null)
+    {
+        $optional['timeframe'] = !empty($timeframe) ? $timeframe : null;
+
+        $response = $this->makeRequest("GET","nodes/$node/lxc/$vmid/rrddata", $optional);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Read VM RRD Data statistics fail!');
+        }
+
+        return ResponseHelper::generate(true,'Read VM RRD Data statistics', $response['data']);
+    }
+
+    /**
+     * Returns a SPICE configuration to connect to the CT.
+     * POST /api2/json/nodes/{node}/lxc/{vmid}/spiceproxy
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @param array $data
+     * @throws Exception
+     */
+    public function lxcSpiceproxy(string $node, int $vmid, array $data)
+    {
+        $response = $this->makeRequest("POST","/nodes/$node/lxc/$vmid/spiceproxy", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Read VM RRD Data statistics fail!');
+        }
+
+        return ResponseHelper::generate(true,'Read VM RRD Data statistics', $response['data']);
+    }
+
+    /**
+     * Create a Template.
+     * POST /api2/json/nodes/{node}/lxc/{vmid}/template
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @param array $data
+     * @throws Exception
+     */
+    public function createLxcTemplate(string $node, int $vmid, array $data)
+    {
+        $response = $this->makeRequest("POST","/nodes/$node/lxc/$vmid/template", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Create a Template fail!');
+        }
+
+        return ResponseHelper::generate(true,'Created a Template', $response['data']);
+    }
+
+    /**
+     * Creates a TCP VNC proxy connections.
+     * POST /api2/json/nodes/{node}/lxc/{vmid}/vncproxy
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @param array $data
+     * @throws Exception
+     */
+    public function createLxcVncproxy(string $node, int $vmid, array $data)
+    {
+        $response = $this->makeRequest("POST","nodes/$node/lxc/$vmid/vncproxy", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Creates a TCP VNC proxy connections fail!');
+        }
+
+        return ResponseHelper::generate(true,'Created a TCP VNC proxy connections', $response['data']);
+    }
+
+    /**
+     * Opens a weksocket for VNC traffic.
+     * GET /api2/json/nodes/{node}/lxc/{vmid}/vncwebsocket
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @param integer|null $port Port number returned by previous vncproxy call.
+     * @param string|null $vncticket Ticket from previous call to vncproxy.
+     * @throws Exception
+     */
+    public function lxcVncwebsocket(string $node, int $vmid, int $port = null, string $vncticket = null)
+    {
+        $optional['port'] = !empty($port) ? $port : null;
+        $optional['vncticket'] = !empty($vncticket) ? $vncticket : null;
+
+        $response = $this->makeRequest("GET","/nodes/$node/lxc/$vmid/vncwebsocket", $optional);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Opens a weksocket for VNC traffic fail!');
+        }
+
+        return ResponseHelper::generate(true,'Opens a weksocket for VNC traffic', $response['data']);
+    }
+
+    /**
      * Get list of VMs on a specific node
      *
      * @param string $node Node name
