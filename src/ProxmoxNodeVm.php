@@ -819,7 +819,7 @@ class ProxmoxNodeVm extends Proxmox
             $result = $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/config", $diskParams);
 
             if (!isset($result['data'])) {
-                throw new Exception('Failed to attach disk: No response data received');
+                return ResponseHelper::generate(false,"Failed to attach disk: No response data received");
             }
 
             $successResponse = [
@@ -835,14 +835,33 @@ class ProxmoxNodeVm extends Proxmox
         }
     }
 
-    public function detachDisk($node, $vmid, $disk)
+    /**
+     * @throws Exception
+     */
+    public function detachDisk(string $node, int $vmid, string $disk, bool $type = false)
     {
-        // API endpoint to remove a disk
-        $result = $this->makeRequest('DELETE', "nodes/{$node}/qemu/{$vmid}/config", [
-            'delete' => $disk, // Specify the disk to delete (e.g., 'scsi0')
-        ]);
+        try {
+            // API endpoint to remove a disk
+            $result = $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/config", [
+                'delete' => $disk, // Specify the disk to delete (e.g., 'scsi0')
+                'force' => $type
+            ]);
 
-        return $result;
+            if (!isset($result['data'])) {
+                return ResponseHelper::generate(false,"Failed to detach disk");
+            }
+
+            $successResponse = [
+                'node' => $node,
+                'vmid' => $vmid,
+                'disk' => $disk,
+                'data' => $result['data']
+            ];
+
+            return ResponseHelper::generate(true, 'Disk attach success', $successResponse);
+        } catch (Exception $e) {
+            return ResponseHelper::generate(false,"Failed to detach disk: " . $e->getMessage());
+        }
     }
 
     /**
