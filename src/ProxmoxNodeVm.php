@@ -712,7 +712,7 @@ class ProxmoxNodeVm extends Proxmox
      * @param array $data
      * @throws Exception
      */
-    public function createFirewallRule($node, $data = array())
+    public function createFirewallRule($node, array $data)
     {
         $response = $this->makeRequest( "POST","nodes/$node/firewall/rules", $data);
 
@@ -829,6 +829,52 @@ class ProxmoxNodeVm extends Proxmox
         }
 
         return ResponseHelper::generate(true,'Set firewall options', $response['data']);
+    }
+
+    /**
+     * Create new rule
+     * from the Proxmox node's public interface to a VM/Container IP:Port.
+     * @throws Exception
+     */
+    public function createQemuFirewallRule(string $node, int $vmid, array $data)
+    {
+        $response = $this->makeRequest('POST', "nodes/$node/qemu/$vmid/firewall/rules", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(true,'Created Firewall', $response['data']);
+        }
+        return ResponseHelper::generate(false,'Create Firewall fail!');
+    }
+
+    /**
+     * List of rule.
+     * from the Proxmox node's public interface to a VM/Container IP:Port.
+     * @throws Exception
+     */
+    public function listQemuFirewallRule(string $node, int $vmid)
+    {
+        $response = $this->makeRequest('GET', "nodes/$node/qemu/$vmid/firewall/rules");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'List Firewall fail!');
+        }
+
+        return ResponseHelper::generate(true,'List Firewall', $response['data']);
+    }
+
+    /**
+     * Removing of rule.
+     * from the Proxmox node's public interface to a VM/Container IP:Port.
+     * @throws Exception
+     */
+    public function removeQemuFirewallRule(string $node, int $vmid, $pos)
+    {
+        $response = $this->makeRequest('DELETE', "nodes/$node/qemu/$vmid/firewall/rules/$pos");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(true,'Removed Firewall', $response['data']);
+        }
+        return ResponseHelper::generate(false,'Remove Firewall fail!');
     }
 
     /**
@@ -1844,6 +1890,168 @@ class ProxmoxNodeVm extends Proxmox
     }
 
     /**
+     * get List available networks
+     * GET /api2/json/nodes/{node}/network
+     * @param string $node The cluster node name.
+     * @param enum|null $type Only list specific interface types.
+     * @throws Exception
+     */
+    public function network(string $node, $type = null)
+    {
+        $optional['type'] = !empty($type) ? $type : null;
+        $response = $this->makeRequest("GET","nodes/$node/network", $optional);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'get List available networks fail!');
+        }
+
+        return ResponseHelper::generate(true,'get List available networks', $response['data']);
+    }
+
+    /**
+     * Create network device configuration
+     * POST /api2/json/nodes/{node}/network
+     * @param string $node The cluster node name.
+     * @param array $data
+     * @throws Exception
+     */
+    public function createNetwork(string $node, array $data)
+    {
+        $response = $this->makeRequest("POST","nodes/$node/network", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Create network device configuration fail!');
+        }
+
+        return ResponseHelper::generate(true,'Created network device configurations', $response['data']);
+    }
+
+    /**
+     * Revert network configuration changes.
+     * DELETE /api2/json/nodes/{node}/network
+     * @param string $node The cluster node name.
+     * @throws Exception
+     */
+    public function revertNetwork(string $node)
+    {
+        $response = $this->makeRequest("DELETE","nodes/$node/network");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Revert network configuration changes fail!');
+        }
+
+        return ResponseHelper::generate(true,'Revert network configuration changes', $response['data']);
+    }
+
+    /**
+     * Network interface name.
+     * GET /api2/json/nodes/{node}/network/{iface}
+     * @param string $node The cluster node name.
+     * @param string $iface
+     * @throws Exception
+     */
+    public function networkIface(string $node, string $iface)
+    {
+        $response = $this->makeRequest("GET","/nodes/$node/network/$iface");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Network interface name fail!');
+        }
+
+        return ResponseHelper::generate(true,'Network interface name', $response['data']);
+    }
+
+    /**
+     * Update network device configuration
+     * PUT /api2/json/nodes/{node}/network/{iface}
+     * @param string $node The cluster node name.
+     * @param string $iface
+     * @param array $data
+     * @throws Exception
+     */
+    public function updateNetworkIface(string $node, string $iface, array $data)
+    {
+        $response = $this->makeRequest("PUT","/nodes/$node/network/$iface", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Update network device configuration fail!');
+        }
+
+        return ResponseHelper::generate(true,'Updated network device configuration', $response['data']);
+    }
+
+    /**
+     * Delete network device configuration
+     * DELETE /api2/json/nodes/{node}/network/{iface}
+     * @param string $node The cluster node name.
+     * @param string $iface
+     * @throws Exception
+     */
+    public function deleteNetworkIface($node, $iface)
+    {
+        $response = $this->makeRequest("DELETE","/nodes/$node/network/$iface");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Delete network device configuration fail!');
+        }
+
+        return ResponseHelper::generate(true,'Deleted network device configuration', $response['data']);
+    }
+
+    /**
+     * Virtual machine index (per node).
+     * GET /api2/json/nodes/{node}/qemu
+     * @param string $node The cluster node name.
+     * @throws Exception
+     */
+    public function qemu(string $node)
+    {
+        $response = $this->makeRequest("GET","nodes/$node/qemu");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Virtual machine fail!');
+        }
+
+        return ResponseHelper::generate(true,'Virtual machine', $response['data']);
+    }
+
+    /**
+     * Create or restore a virtual machine.
+     * POST /api2/json/nodes/{node}/qemu
+     * @param string $node The cluster node name.
+     * @param array $data
+     * @throws Exception
+     */
+    public function createQemu(string $node, array $data)
+    {
+        $response = $this->makeRequest("POST","nodes/$node/qemu", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Create or restore a virtual machine fail!');
+        }
+
+        return ResponseHelper::generate(true,'Create or restore a virtual machine', $response['data']);
+    }
+
+    /**
+     * Directory index
+     * GET /api2/json/nodes/{node}/qemu/{vmid}
+     * @param string $node The cluster node name.
+     * @param integer $vmid The (unique) ID of the VM.
+     * @throws Exception
+     */
+    public function qemuVmid(string $node, int $vmid)
+    {
+        $response = $this->makeRequest("GET","nodes/$node/qemu/$vmid");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'VM details fail!');
+        }
+
+        return ResponseHelper::generate(true,'VM details', $response['data']);
+    }
+
+    /**
      * Get list of VMs on a specific node
      *
      * @param string $node Node name
@@ -2825,6 +3033,9 @@ class ProxmoxNodeVm extends Proxmox
         return ResponseHelper::generate(false,'Network configure fail!', $response['data']);
     }
 
+    /**
+     * @throws Exception
+     */
     public function fetchAvailableIPs($node)
     {
 //        $params = ['type' => 'bridge'];
@@ -2840,6 +3051,23 @@ class ProxmoxNodeVm extends Proxmox
     public function applyCloudInitVM($node, $vmid)
     {
         return $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/cloudinit");
+    }
+
+    /**
+     * Destroy the vm (also delete all used/owned volumes)
+     * DELETE /api2/json/nodes/{node}/qemu/{vmid}
+     * @param string   $node    The cluster node name.
+     * @param integer  $vmid    The (unique) ID of the VM.
+     * @param array    $data
+     */
+    public function destroyVm($node, $vmid, $data = array())
+    {
+        $response = $this->makeRequest('DELETE',"nodes/$node/qemu/$vmid", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Destroy the vm fail!', $response['data']);
+        }
+        return ResponseHelper::generate(true,'Destroyed the vm', $response['data']);
     }
 
     /**
@@ -2894,7 +3122,7 @@ class ProxmoxNodeVm extends Proxmox
         }
 
         try {
-            $response = $this->makeRequest('DELETE', "nodes/{$node}/qemu/{$vmid}", $params);
+            $response = $this->makeRequest('DELETE', "nodes/$node/qemu/$vmid", $params);
             $successResponse = [
                 'data' => $response['data'],
                 'node' => $node,
