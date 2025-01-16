@@ -712,7 +712,7 @@ class ProxmoxNodeVm extends Proxmox
      * @param array $data
      * @throws Exception
      */
-    public function createFirewallRule($node, $data = array())
+    public function createFirewallRule($node, array $data)
     {
         $response = $this->makeRequest( "POST","nodes/$node/firewall/rules", $data);
 
@@ -829,6 +829,52 @@ class ProxmoxNodeVm extends Proxmox
         }
 
         return ResponseHelper::generate(true,'Set firewall options', $response['data']);
+    }
+
+    /**
+     * Create new rule
+     * from the Proxmox node's public interface to a VM/Container IP:Port.
+     * @throws Exception
+     */
+    public function createQemuFirewallRule(string $node, int $vmid, array $data)
+    {
+        $response = $this->makeRequest('POST', "nodes/$node/qemu/$vmid/firewall/rules", $data);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(true,'Created Firewall', $response['data']);
+        }
+        return ResponseHelper::generate(false,'Create Firewall fail!');
+    }
+
+    /**
+     * List of rule.
+     * from the Proxmox node's public interface to a VM/Container IP:Port.
+     * @throws Exception
+     */
+    public function listQemuFirewallRule(string $node, int $vmid)
+    {
+        $response = $this->makeRequest('GET', "nodes/$node/qemu/$vmid/firewall/rules");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'List Firewall fail!');
+        }
+
+        return ResponseHelper::generate(true,'List Firewall', $response['data']);
+    }
+
+    /**
+     * Removing of rule.
+     * from the Proxmox node's public interface to a VM/Container IP:Port.
+     * @throws Exception
+     */
+    public function removeQemuFirewallRule(string $node, int $vmid, $pos)
+    {
+        $response = $this->makeRequest('DELETE', "nodes/$node/qemu/$vmid/firewall/rules/$pos");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(true,'Removed Firewall', $response['data']);
+        }
+        return ResponseHelper::generate(false,'Remove Firewall fail!');
     }
 
     /**
