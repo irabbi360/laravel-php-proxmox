@@ -2886,57 +2886,30 @@ class ProxmoxNodeVm extends Proxmox
      * @return array
      * @throws Exception
      */
-    public function generateSSHKey(
-        string $keyName,
-        string $keyPath = null,
-        string $type = 'ed25519',
-        int    $bits = 4096
-    ): array
+    public function generateSSHKey($path)
     {
-        // Set default path if not provided
-        if ($keyPath === null) {
-            $keyPath = storage_path('app/ssh');
-        }
+        $name = preg_replace('/[^a-z0-9]+/i', '_', strtolower(request()->name));
+        $keyPath = $path;
+        $keyName = $name;
+        $fullPath = "{$keyPath}/{$keyName}";
 
-        // Create directory if it doesn't exist
-        if (!is_dir($keyPath)) {
+        // Ensure directory exists
+        if (!file_exists($keyPath)) {
             mkdir($keyPath, 0700, true);
         }
 
-        $privateKeyPath = "{$keyPath}/{$keyName}";
-        $publicKeyPath = "{$keyPath}/{$keyName}.pub";
+        // Execute ssh-keygen
+        exec("ssh-keygen -t rsa -b 2048 -f {$fullPath} -N 'pass'");
 
-        // Generate key pair
-        $config = [
-            'private_key_type' => $type === 'rsa' ? OPENSSL_KEYTYPE_RSA : OPENSSL_KEYTYPE_EC,
-            'private_key_bits' => $bits,
+
+        $response = [
+            'private_key_path' => $fullPath,
+            'private_key' => file_get_contents($fullPath),
+            'public_key_path' => $fullPath . '.pub',
+            'public_key' => file_get_contents($fullPath . '.pub')
         ];
 
-        if ($type === 'ed25519') {
-            $config['curve_name'] = 'ed25519';
-        }
-
-        $key = openssl_pkey_new($config);
-        if (!$key) {
-            throw new Exception('Failed to generate SSH key pair: ' . openssl_error_string());
-        }
-
-        // Export private key
-        openssl_pkey_export($key, $privateKey);
-        file_put_contents($privateKeyPath, $privateKey);
-        chmod($privateKeyPath, 0600);
-
-        // Export public key
-        $keyDetails = openssl_pkey_get_details($key);
-        $publicKey = "{$type} {$keyDetails['key']} {$keyName}";
-        file_put_contents($publicKeyPath, $publicKey);
-        chmod($publicKeyPath, 0644);
-
-        return [
-            'private_key_path' => $privateKeyPath,
-            'public_key_path' => $publicKeyPath,
-            'public_key' => $publicKey
-        ];
+        return ResponseHelper::generate(true,'SSH key generated successfully', $response);
     }
 
     /**
@@ -2957,12 +2930,13 @@ class ProxmoxNodeVm extends Proxmox
             throw new Exception("VM {$vmid} not found on node {$node}");
         }
 
+
         // Clean up the public key
         $publicKey = trim($publicKey);
 
         // Set SSH key in cloud-init config
         return $this->setVMConfig($node, $vmid, [
-            'sshkeys' => urlencode($publicKey)
+            'sshkeys' => $publicKey
         ]);
     }
 
