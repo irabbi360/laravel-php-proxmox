@@ -195,8 +195,8 @@ class ProxmoxStorage extends Proxmox
     {
         $response = $this->makeRequest('DELETE', "storage/{$storage}");
 
-        if (!isset($response['data'])){
-            return ResponseHelper::generate(true,'Storage deleted successfully', $response['data']);
+        if (array_key_exists('data', $response) && is_null($response['data'])) {
+            return ResponseHelper::generate(true, 'Storage deleted successfully', $response['data']);
         }
         return ResponseHelper::generate(false,'Storage delete fail!', $response['data']);
     }
