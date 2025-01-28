@@ -3010,6 +3010,45 @@ class ProxmoxNodeVm extends Proxmox
     /**
      * @throws Exception
      */
+    public function updateVmConfig(string $node, int $vmid, $params)
+    {
+        $response = $this->makeRequest('PUT', "nodes/{$node}/qemu/{$vmid}/config", $params);
+
+        if (!isset($response['data'])){
+            $successResponse = [
+                'node' => $node,
+                'vmid' => $vmid,
+            ];
+            return ResponseHelper::generate(true,'Config updated successfully', $successResponse);
+        }
+        return ResponseHelper::generate(false,'Config update failed!', $response['data']);
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function resizeVm(string $node, int $vmid, $params)
+    {
+        // Disk resize parameters
+        $resizeParams = [
+            'disk' => 'scsi0', // Disk you want to resize (e.g., scsi0, virtio0)
+            'size' => '+10G',  // Size to add (e.g., +10G for 10GB)
+        ];
+        $response = $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/config", $params);
+
+        if (!isset($response['data'])){
+            $successResponse = [
+                'node' => $node,
+                'vmid' => $vmid,
+            ];
+            return ResponseHelper::generate(true,'Config updated successfully', $successResponse);
+        }
+        return ResponseHelper::generate(false,'Config update failed!', $response['data']);
+    }
+
+    /**
+     * @throws Exception
+     */
     public function fetchAvailableIPs($node)
     {
 //        $params = ['type' => 'bridge'];
@@ -3198,5 +3237,88 @@ class ProxmoxNodeVm extends Proxmox
         } catch (Exception $e) {
             echo "Error: " . $e->getMessage();
         }*/
+    }
+
+    /**
+     * Node index.
+     * @throws Exception
+     */
+    public function diskList(string $node)
+    {
+        $response = $this->makeRequest('GET', "nodes/{$node}/disks");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Disk list failed!', $response['data']);
+        }
+
+        $successResponse = [
+            'node' => $node,
+            'data' => $response['data']
+        ];
+
+        return ResponseHelper::generate(true,'Disk list successfully', $successResponse);
+    }
+
+    /**
+     * PVE Managed storages..
+     * $type directory, lvm, lvmthin, zfs,
+     * @throws Exception
+     */
+    public function diskTypeList(string $node, string $type)
+    {
+        $response = $this->makeRequest('GET', "nodes/{$node}/disks/{$type}");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Disk fetch failed!', $response['data']);
+        }
+
+        $successResponse = [
+            'node' => $node,
+            'data' => $response['data']
+        ];
+
+        return ResponseHelper::generate(true,'Disk fetch successfully', $successResponse);
+    }
+
+    /**
+     * PVE Managed storages..
+     * $type directory, lvm, lvmthin, zfs,
+     * @throws Exception
+     */
+    public function createDiskType(string $node, string $type, array $params)
+    {
+        $response = $this->makeRequest('POST', "nodes/{$node}/disks/{$type}", $params);
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Disk fetch failed!', $response['data']);
+        }
+
+        $successResponse = [
+            'node' => $node,
+            'data' => $response['data']
+        ];
+
+        return ResponseHelper::generate(true,'Disk fetch successfully', $successResponse);
+    }
+
+    /**
+     * PVE Managed storages..
+     * $type directory, lvm, lvmthin, zfs,
+     * @throws Exception
+     */
+    public function deleteDiskType(string $node, string $type, $name)
+    {
+        $response = $this->makeRequest('DELETE', "nodes/{$node}/disks/{$type}/{$name}");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Disk delete failed!', $response['data']);
+        }
+
+        $successResponse = [
+            'node' => $node,
+            'data' => $response['data']
+        ];
+
+        return ResponseHelper::generate(true,'Disk deleted successfully', $successResponse);
     }
 }
