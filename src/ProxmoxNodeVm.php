@@ -3321,4 +3321,25 @@ class ProxmoxNodeVm extends Proxmox
 
         return ResponseHelper::generate(true,'Disk deleted successfully', $successResponse);
     }
+
+    /**
+     * QEMU monitor commands...
+     * @throws Exception
+     */
+    public function vmMonitor(string $node, int $vmid)
+    {
+        $params = ['command' => 'query-cpus'];
+        $response = $this->makeRequest('GET', "nodes/{$node}/qemu/{$vmid}}/status/current");
+
+        if (!isset($response['data'])){
+            return ResponseHelper::generate(false,'Disk delete failed!', $response['data']);
+        }
+
+        $successResponse = [
+            'node' => $node,
+            'data' => $response['data']
+        ];
+
+        return ResponseHelper::generate(true,'Disk deleted successfully', $successResponse);
+    }
 }
