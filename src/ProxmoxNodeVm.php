@@ -3326,13 +3326,13 @@ class ProxmoxNodeVm extends Proxmox
      * QEMU monitor commands...
      * @throws Exception
      */
-    public function vmMonitor(string $node, int $vmid)
+    public function vmMonitor(string $node, int $vmid, $params)
     {
-        $params = ['command' => 'query-cpus'];
-        $response = $this->makeRequest('GET', "nodes/{$node}/qemu/{$vmid}}/status/current");
+        $params = ['command' => 'info'];
+        $response = $this->makeRequest('POST', "nodes/{$node}/qemu/{$vmid}/monitor", $params);
 
         if (!isset($response['data'])){
-            return ResponseHelper::generate(false,'Disk delete failed!', $response['data']);
+            return ResponseHelper::generate(false,'Failed to fetch monitoring data!', $response['data']);
         }
 
         $successResponse = [
@@ -3340,6 +3340,119 @@ class ProxmoxNodeVm extends Proxmox
             'data' => $response['data']
         ];
 
-        return ResponseHelper::generate(true,'Disk deleted successfully', $successResponse);
+        return ResponseHelper::generate(true,'Data retrieved successfully', $successResponse);
+    }
+
+    /**
+     * QEMU VM  RRDdata (Round Robin Database data)...
+     * @throws Exception
+     */
+    public function vmRrddata(string $node, int $vmid, $params)
+    {
+        try {
+            // Fixed URL by removing extra curly brace
+            $response = $this->makeRequest('GET', "nodes/{$node}/qemu/{$vmid}/rrddata", $params);
+
+            if (!isset($response['data'])) {
+                return ResponseHelper::generate(
+                    false,
+                    'No monitoring data available',
+                    []
+                );
+            }
+
+            $successResponse = [
+                'node' => $node,
+                'vmid' => $vmid,
+                'data' => array_map(function($entry) {
+                    return [
+                        'time' => isset($entry['time']) ? date('Y-m-d H:i:s', $entry['time']) : null,
+                        'cpu' => $entry['cpu'] ?? null,
+                        'mem' => $entry['mem'] ?? null,
+                        'netin' => $entry['netin'] ?? null,
+                        'netout' => $entry['netout'] ?? null,
+                        'diskread' => $entry['diskread'] ?? null,
+                        'diskwrite' => $entry['diskwrite'] ?? null
+                    ];
+                }, $response['data'])
+            ];
+
+            return ResponseHelper::generate(true, 'Data retrieved successfully', $successResponse);
+
+        } catch (Exception $e) {
+            return ResponseHelper::generate(
+                false,
+                'Failed to fetch monitoring data: ' . $e->getMessage(),
+                []
+            );
+        }
+    }
+
+    public function getVMMetrics(string $node, int $vmid, $params)
+    {
+        try {
+            $response = $this->makeRequest('GET', "nodes/{$node}/qemu/{$vmid}/rrddata", $params);
+
+            if (!isset($response['data']) || empty($response['data'])) {
+                return ResponseHelper::generate(false, 'No metrics data available', []);
+            }
+
+            // Process and format the metrics
+            $formattedMetrics = array_map(function($entry) {
+                return [
+                    'timestamp' => date('Y-m-d H:i:s', $entry['time']),
+
+                    // CPU Metrics
+                    'cpu' => [
+                        'usage_percentage' => isset($entry['cpu']) ? round($entry['cpu'] * 100, 2) : null,
+                    ],
+
+                    // Memory Metrics
+                    'memory' => [
+                        'used_bytes' => $entry['mem'] ?? null,
+                        'used_gb' => isset($entry['mem']) ? round($entry['mem'] / (1024 * 1024 * 1024), 2) : null,
+                        'total_bytes' => $entry['maxmem'] ?? null,
+                        'total_gb' => isset($entry['maxmem']) ? round($entry['maxmem'] / (1024 * 1024 * 1024), 2) : null,
+                    ],
+
+                    // Network Metrics
+                    'network' => [
+                        'in_bytes' => $entry['netin'] ?? null,
+                        'in_mb' => isset($entry['netin']) ? round($entry['netin'] / (1024 * 1024), 2) : null,
+                        'out_bytes' => $entry['netout'] ?? null,
+                        'out_mb' => isset($entry['netout']) ? round($entry['netout'] / (1024 * 1024), 2) : null,
+                    ],
+
+                    // Disk I/O Metrics
+                    'disk' => [
+                        'read_bytes' => $entry['diskread'] ?? null,
+                        'read_mb' => isset($entry['diskread']) ? round($entry['diskread'] / (1024 * 1024), 2) : null,
+                        'write_bytes' => $entry['diskwrite'] ?? null,
+                        'write_mb' => isset($entry['diskwrite']) ? round($entry['diskwrite'] / (1024 * 1024), 2) : null,
+                    ]
+                ];
+            }, $response['data']);
+
+            $successResponse = [
+                'node' => $node,
+                'vmid' => $vmid,
+                'metrics' => $formattedMetrics,
+                'summary' => [
+                    'latest_cpu_usage' => end($formattedMetrics)['cpu']['usage_percentage'] ?? null,
+                    'latest_memory_used_gb' => end($formattedMetrics)['memory']['used_gb'] ?? null,
+                    'latest_network_in_mb' => end($formattedMetrics)['network']['in_mb'] ?? null,
+                    'latest_network_out_mb' => end($formattedMetrics)['network']['out_mb'] ?? null,
+                ]
+            ];
+
+            return ResponseHelper::generate(true, 'Metrics retrieved successfully', $successResponse);
+
+        } catch (Exception $e) {
+            return ResponseHelper::generate(
+                false,
+                'Failed to fetch metrics: ' . $e->getMessage(),
+                []
+            );
+        }
     }
 }
