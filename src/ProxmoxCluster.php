@@ -21,6 +21,22 @@ class ProxmoxCluster extends Proxmox
     }
 
     /**
+     * List vzdump backup schedule.
+     * GET /api2/json/cluster/backup
+     * @throws \Exception
+     */
+    public function listBackup()
+    {
+        $response = $this->makeRequest("GET", "cluster/backup");
+
+        if (!isset($response['data'])){
+            ResponseHelper::generate(false,'Cluster backup.');
+        }
+
+        return ResponseHelper::generate(true,'Cluster backup', $response['data']);
+    }
+
+    /**
      * Get cluster status
      * @throws \Exception
      */
@@ -99,7 +115,7 @@ class ProxmoxCluster extends Proxmox
      * Create backup schedule
      * @throws \Exception
      */
-    public function createBackupSchedule($data)
+    public function createBackup($data)
     {
         $response = $this->makeRequest('POST', 'cluster/backup', $data);
 
@@ -211,7 +227,7 @@ class ProxmoxCluster extends Proxmox
      * Get cluster firewall settings
      * @throws \Exception
      */
-    public function getFirewallSettings()
+    public function firewall()
     {
         $response = $this->makeRequest('GET', 'cluster/firewall');
 
@@ -220,21 +236,6 @@ class ProxmoxCluster extends Proxmox
         }
 
         return ResponseHelper::generate(true,'Cluster firewall', $response['data']);
-    }
-
-    /**
-     * Update cluster firewall settings
-     * @throws \Exception
-     */
-    public function updateFirewallSettings($data)
-    {
-        $response = $this->makeRequest('PUT', 'cluster/firewall', $data);
-
-        if (!isset($response['data'])){
-            ResponseHelper::generate(false,'Cluster firewall update fail.');
-        }
-
-        return ResponseHelper::generate(true,'Cluster firewall updated successfully', $response['data']);
     }
 
     /**
@@ -585,6 +586,40 @@ class ProxmoxCluster extends Proxmox
     }
 
     /**
+     * Modify rule data.
+     * PUT /api2/json/cluster/firewall/rules/{pos}
+     * @param integer  $pos      Update rule at position <pos>.
+     * @param array    $data
+     */
+    public function setFirewallRulesPos($pos, $data = array())
+    {
+        $response = $this->makeRequest("PUT","/cluster/firewall/rules/$pos", $data);
+
+        if (!isset($response['data'])){
+            ResponseHelper::generate(false,'Modify rule data fail.');
+        }
+
+        return ResponseHelper::generate(true,'Modify rule data', $response['data']);
+    }
+
+    /**
+     * Update cluster firewall settings
+     * @throws \Exception
+     */
+    public function updateFirewallSettings($data)
+    {
+        $response = $this->makeRequest('PUT', 'cluster/firewall', $data);
+
+        if (!isset($response['data'])){
+            ResponseHelper::generate(false,'Cluster firewall update fail.');
+        }
+
+        return ResponseHelper::generate(true,'Cluster firewall updated successfully', $response['data']);
+    }
+
+
+
+    /**
      * Delete rule.
      * @param integer $pos Update rule at position <pos>.
      * @throws \Exception
@@ -677,11 +712,27 @@ class ProxmoxCluster extends Proxmox
     }
 
     /**
+     * Get HA groups.
+     * GET /api2/json/cluster/ha/groups
+     * @throws \Exception
+     */
+    public function getHaGroups()
+    {
+        $response = $this->makeRequest('GET', "cluster/ha/groups");
+
+        if (!isset($response['data'])){
+            ResponseHelper::generate(false,'Cluster HA group fail.');
+        }
+
+        return ResponseHelper::generate(true,'Cluster HA group', $response['data']);
+    }
+
+    /**
      * Read ha group configuration.
      * @param string $group The HA group identifier.
      * @throws \Exception
      */
-    public function HaGroups($group)
+    public function haGroups($group)
     {
         $response = $this->makeRequest('GET', "cluster/ha/groups/$group");
 
@@ -840,9 +891,10 @@ class ProxmoxCluster extends Proxmox
 
     /**
      * Resources index (cluster wide).
-     * @param enum     $type    vm | storage | node
+     * @param enum $type vm | storage | node
+     * @throws \Exception
      */
-    public function Resources($type = null)
+    public function resources($type = null)
     {
         $optional['type'] = !empty($type) ? $type : null;
         $response = $this->makeRequest('GET', "cluster/resources", $optional);

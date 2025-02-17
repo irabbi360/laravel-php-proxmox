@@ -8,7 +8,8 @@ class ProxmoxStorage extends Proxmox
 {
     /**
      * Storage index.
-     * @param enum $type Only list storage of specific type
+     * @param $type Only list storage of specific type
+     * @throws \Exception
      */
     public function storage($type = null)
     {
@@ -42,6 +43,22 @@ class ProxmoxStorage extends Proxmox
             ResponseHelper::generate(false,'Storage create fail.');
         }
         return ResponseHelper::generate(true,'Storage created successfully.', $response['data']);
+    }
+
+    /**
+     * Read storage configuration.
+     * GET /api2/json/storage/{storage}
+     * @param string $storage The storage identifier.
+     * @throws \Exception
+     */
+    public function getStorage($storage)
+    {
+        $response = $this->makeRequest('GET', "storage/$storage");
+
+        if (!isset($response['data'])){
+            ResponseHelper::generate(false,'Storage fail.');
+        }
+        return ResponseHelper::generate(true,'Storage details.', $response['data']);
     }
 
     /**

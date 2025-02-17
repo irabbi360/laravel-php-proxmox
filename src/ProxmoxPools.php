@@ -34,9 +34,11 @@ class ProxmoxPools extends Proxmox
         }
         return ResponseHelper::generate(true,'Pools system log.', $response['data']);
     }
+
     /**
      * Read system log
-     * @param string   $poolid
+     * @param string $poolid
+     * @throws \Exception
      */
     public function putPool($poolid, $data = array())
     {
