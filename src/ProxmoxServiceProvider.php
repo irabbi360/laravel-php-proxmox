@@ -15,7 +15,7 @@ class ProxmoxServiceProvider extends ServiceProvider
 
         // Register Proxmox services
         $services = [
-            'proxmox-node' => ProxmoxNodeVm::class,
+            'proxmox-node' => ProxmoxNode::class,
             'proxmox-cluster' => ProxmoxCluster::class,
             'proxmox-storage' => ProxmoxStorage::class,
             'proxmox-pools' => ProxmoxPools::class,
