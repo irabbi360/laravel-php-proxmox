@@ -20,11 +20,13 @@ composer require irabbi360/laravel-php-proxmox
 ```
 
 You can publish the config file with:
+
 ```bash
 php artisan vendor:publish --tag=proxmox-config
 ```
 
 Add this in .env from the proxmox.php config file
+
 ```bash
 PROXMOX_HOST=
 PROXMOX_USER=
@@ -34,6 +36,7 @@ PROXMOX_PORT=
 ```
 
 ## How to use
+
 To use the Proxmox functionality, you can call the respective facades in your controller. Import the required facades based on the functionality you need. Here's how you can utilize them:
 
 - For Node-related operations, use the `ProxmoxNodeVM` facade.
@@ -474,7 +477,7 @@ ProxmoxNode::qemuMoveDisk($node, $vmid, $data = array())
 ProxmoxNode::qemuPending($node, $vmid)
 ProxmoxNode::qemuResize($node, $vmid, $data = array())
 ProxmoxNode::qemuRrd($node, $vmid, $ds = null, $timeframe = null)
-ProxmoxNode::qemuRrddata($node, $vmid, $timeframe = null)
+ProxmoxNode::qemuRrddata($node, $vmid, $timeframe = null, $cf = null)
 ProxmoxNode::qemuSendkey($node, $vmid, $data = array())
 ProxmoxNode::qemuSpiceproxy($node, $vmid, $data = array())
 ProxmoxNode::createQemuTemplate($node, $vmid, $data = array())
