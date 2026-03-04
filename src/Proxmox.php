@@ -30,4 +30,24 @@ class Proxmox
 
         throw new Exception('Authentication failed');
     }
+
+    /**
+     * Get the Ticket
+     *
+     * @return string
+     */
+    public function getTicket(): string
+    {
+        return $this->ticket;
+    }
+
+    /**
+     * Get the CSRF
+     *
+     * @return string
+     */
+    public function getCsrf(): string
+    {
+        return $this->csrf;
+    }
 }
