@@ -38,7 +38,7 @@ class Proxmox
      */
     public function getTicket(): string
     {
-        return $ticket;
+        return $this->ticket;
     }
 
     /**
@@ -48,6 +48,6 @@ class Proxmox
      */
     public function getCsrf(): string
     {
-        return $csrf;
+        return $this->csrf;
     }
 }
