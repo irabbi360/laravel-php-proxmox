@@ -26,13 +26,17 @@ trait Authenticator
      */
     public function authenticate(): array
     {
-        $url = "https://{$this->hostname}:{$this->port}/api2/json/access/ticket";
-        $data = [
-            'username' => "{$this->username}@{$this->realm}",
-            'password' => $this->password,
-        ];
+       $cacheKey = "proxmox_" . md5("{$this->hostname}_{$this->port}_{$this->username}_{$this->realm}");
 
-        return $this->sendPostRequest($url, $data);
+        return \Cache::remember( $cacheKey, now()->addMinutes( 90 ), function () use ($cacheKey) {
+            $url = "https://{$this->hostname}:{$this->port}/api2/json/access/ticket";
+            $data = [
+                'username' => "{$this->username}@{$this->realm}",
+                'password' => $this->password,
+            ];
+
+            return $this->sendPostRequest($url, $data);
+        });
     }
 
     /**
