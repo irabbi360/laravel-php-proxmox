@@ -286,7 +286,7 @@ class ProxmoxAccess extends Proxmox
      */
     public function createUser(array $data)
     {
-        $response = $this->makeRequest('POST', 'access/users');
+        $response = $this->makeRequest('POST', 'access/users', $data);
 
         if (!isset($response['data'])){
             ResponseHelper::generate(false,'Access user create fail.');
@@ -398,7 +398,7 @@ class ProxmoxAccess extends Proxmox
      */
     public function createTicket(array $data)
     {
-        $response = $this->makeRequest('POST', "access/ticket");
+        $response = $this->makeRequest('POST', "access/ticket", $data);
 
         if (!isset($response['data'])){
             ResponseHelper::generate(false,'Access user authentication fail.');
