@@ -26,13 +26,27 @@ trait Authenticator
      */
     public function authenticate(): array
     {
-        $url = "https://{$this->hostname}:{$this->port}/api2/json/access/ticket";
-        $data = [
-            'username' => "{$this->username}@{$this->realm}",
-            'password' => $this->password,
-        ];
+        $cacheKey = "proxmox_" . hash('sha256', "{$this->hostname}_{$this->port}_{$this->username}_{$this->realm}_" . hash( $this->password ) );
 
-        return $this->sendPostRequest($url, $data);
+        return \Cache::remember($cacheKey, now()->addMinutes(90), function () {
+            try {
+                $response = $this->sendPostRequest(
+                    "https://{$this->hostname}:{$this->port}/api2/json/access/ticket",
+                    [
+                        'username' => "{$this->username}@{$this->realm}",
+                        'password' => $this->password,
+                    ],
+                );
+
+                if( isset( $response['data']['ticket'], $response['data']['CSRFPreventionToken'] ) ) {
+                    return $response;
+                }
+
+                throw new \Exception("Authentication failed: Invalid response format");
+            } catch (\Throwable $e) {
+                throw new \Exception("Authentication failed: {$e->getMessage()}", 0, $e );
+            }
+        });
     }
 
     /**
