@@ -2,6 +2,8 @@
 
 namespace Irabbi360\Proxmox\Traits;
 
+use Irabbi360\Proxmox\Exception\ProxmoxRequestException;
+
 trait Authenticator
 {
     use HttpClient;
@@ -83,10 +85,16 @@ trait Authenticator
             throw new \Exception('cURL Error: ' . curl_error($curl));
         }
 
-        curl_close($curl);
-
         if ($httpCode >= 400) {
-            throw new \Exception("API request failed with status code: {$httpCode}");
+            $curlError = curl_error($curl);
+            $curlErrno = curl_errno($curl);
+            $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+
+            curl_close($curl);
+
+            throw new ProxmoxRequestException( $curlError, $httpCode, $method, $url, $curlErrno, $response);
+        } else {
+            curl_close($curl);
         }
 
         return json_decode($response, true);
